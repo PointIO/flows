@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://activiti.org/bpmn20">
+  <process id="SFDCFlow" name="SFDCalculatorFlow" isExecutable="true">
+    <subProcess id="SFDCCalculator" name="SFDC Calculator">
+      <multiInstanceLoopCharacteristics isSequential="false" activiti:collection="Approver_LIST_COL" activiti:elementVariable="assignee"></multiInstanceLoopCharacteristics>
+      <userTask id="BasicUserInfo" name="Basic User Info" activiti:assignee="${assignee}">
+        <extensionElements>
+          <activiti:formProperty id="UserCurrent" name="How many Salesforce Accounts do you currently pay for?" type="long" required="true"></activiti:formProperty>
+          <activiti:formProperty id="UserNew" name="How many new SFDC Accounts have been requested?" type="long" required="true"></activiti:formProperty>
+          <activiti:formProperty id="UserLevel" name="Choose your SFDC account level? dropdown" type="enum" required="true">
+            <activiti:value id="ContactManager " name="Contact Manager "></activiti:value>
+            <activiti:value id="Group" name="Group"></activiti:value>
+            <activiti:value id="Professional" name="Professional"></activiti:value>
+            <activiti:value id="Enterprise" name="Enterprise"></activiti:value>
+            <activiti:value id="Performance" name="Performance"></activiti:value>
+            <activiti:value id="NotSure" name="Not Sure"></activiti:value>
+          </activiti:formProperty>
+        </extensionElements>
+      </userTask>
+      <sequenceFlow id="flow29" sourceRef="BasicUserInfo" targetRef="InputUserSeg"></sequenceFlow>
+      <serviceTask id="addInvitesScript" name="Add invites" activiti:class="plugins.wf_Add_Parties"></serviceTask>
+      <scriptTask id="calculateResults" name="Calculate Resutls" scriptFormat="javascript" activiti:autoStoreVariables="true">
+        <script> // ****** set crrent user map
+userLevelCostMap=Packages.java.util.HashMap();
+userLevelCostMap.put("Contact Manager",   5.00);
+userLevelCostMap.put("Group",            25.00);
+userLevelCostMap.put("Professional",     65.00);
+userLevelCostMap.put("Enterprise",      125.00);
+userLevelCostMap.put("Performance",     300.00);
+userLevelCostMap.put("Not Sure",        125.00);
+
+inputUserLevel = "Not Sure";
+if (UserLevel != "") { inputUserLevel = UserLevel}
+costPerUser = 0 + userLevelCostMap.get(inputUserLevel);
+
+userProjected         =   UserCurrent * 1   +  UserNew * 1;
+currentMonthlySpend   =   UserCurrent    *  costPerUser;
+projectedMonthlySpend =   userProjected * costPerUser;
+
+ // ****** set crrent user map
+currentUserMap=Packages.java.util.HashMap();
+currentUserMap.put("dedicated",   UserCurrent * PercentDedicatedUser);
+currentUserMap.put("occasional",  UserCurrent * PercentOccasionalUser);
+currentUserMap.put("infrequent",  UserCurrent * PercentInfrequentUser);
+currentUserMap.put("thirdParty",  UserCurrent * Percent3rdPartyUser);
+
+ // ****** set projected user map
+projectedUserMap=Packages.java.util.HashMap();
+projectedUserMap.put("dedicated",   userProjected * PercentDedicatedUser);
+projectedUserMap.put("occasional",  userProjected * PercentOccasionalUser);
+projectedUserMap.put("infrequent",  userProjected * PercentInfrequentUser);
+projectedUserMap.put("thirdParty",  userProjected * Percent3rdPartyUser);
+
+ // ****** set min save Assumption map
+minSaveAssumptionMap=Packages.java.util.HashMap();
+minSaveAssumptionMap.put("dedicated",   "1");
+minSaveAssumptionMap.put("occasional",  "0.75");
+minSaveAssumptionMap.put("infrequent",  "0.5");
+minSaveAssumptionMap.put("thirdParty",  "0.25");
+
+ // ****** set min current user map
+minUserCurrentPIOMap=Packages.java.util.HashMap();
+minUserCurrentPIOMap.put("dedicated",   currentUserMap.get("dedicated")  * minSaveAssumptionMap.get("dedicated"));
+minUserCurrentPIOMap.put("occasional",  currentUserMap.get("occasional") * minSaveAssumptionMap.get("occasional"));
+minUserCurrentPIOMap.put("infrequent",  currentUserMap.get("infrequent") * minSaveAssumptionMap.get("infrequent"));
+minUserCurrentPIOMap.put("thirdParty",  currentUserMap.get("thirdParty") * minSaveAssumptionMap.get("thirdParty"));
+
+lowEndWithPIOCurrentUser = minUserCurrentPIOMap.get("dedicated") * 1
+						+  minUserCurrentPIOMap.get("occasional") * 1
+						+  minUserCurrentPIOMap.get("infrequent") * 1
+						+  minUserCurrentPIOMap.get("thirdParty") * 1;
+
+lowEndWithPIOCurrentCost = lowEndWithPIOCurrentUser * costPerUser;
+
+ // ****** set min projected user map
+minUserProjectedPIOMap=Packages.java.util.HashMap();
+minUserProjectedPIOMap.put("dedicated",   projectedUserMap.get("dedicated")  * minSaveAssumptionMap.get("dedicated"));
+minUserProjectedPIOMap.put("occasional",  projectedUserMap.get("occasional") * minSaveAssumptionMap.get("occasional"));
+minUserProjectedPIOMap.put("infrequent",  projectedUserMap.get("infrequent") * minSaveAssumptionMap.get("infrequent"));
+minUserProjectedPIOMap.put("thirdParty",  projectedUserMap.get("thirdParty") * minSaveAssumptionMap.get("thirdParty"));
+
+lowEndWithPIOProjectedUser = minUserProjectedPIOMap.get("dedicated") * 1
+						+  minUserProjectedPIOMap.get("occasional") * 1
+						+  minUserProjectedPIOMap.get("infrequent") * 1
+						+  minUserProjectedPIOMap.get("thirdParty")* 1;
+
+lowEndWithPIOProjectedCost = lowEndWithPIOProjectedUser * costPerUser;
+
+
+ // ****** set max save Assumption map
+maxSaveAssumptionMap=Packages.java.util.HashMap();
+maxSaveAssumptionMap.put("dedicated",   "0.75");
+maxSaveAssumptionMap.put("occasional",  "0.5");
+maxSaveAssumptionMap.put("infrequent",  "0.0");
+maxSaveAssumptionMap.put("thirdParty",  "0.0");
+
+ // ****** set max projected user map
+maxUserProjectedPIOMap=Packages.java.util.HashMap();
+maxUserProjectedPIOMap.put("dedicated",   projectedUserMap.get("dedicated")  * maxSaveAssumptionMap.get("dedicated"));
+maxUserProjectedPIOMap.put("occasional",  projectedUserMap.get("occasional") * maxSaveAssumptionMap.get("occasional"));
+maxUserProjectedPIOMap.put("infrequent",  projectedUserMap.get("infrequent") * maxSaveAssumptionMap.get("infrequent"));
+maxUserProjectedPIOMap.put("thirdParty",  projectedUserMap.get("thirdParty") * maxSaveAssumptionMap.get("thirdParty"));
+
+highEndWithPIOProjectedUser = maxUserProjectedPIOMap.get("dedicated")* 1 
+						+  maxUserProjectedPIOMap.get("occasional") * 1
+						+  maxUserProjectedPIOMap.get("infrequent") * 1
+						+  maxUserProjectedPIOMap.get("thirdParty")* 1;
+
+highEndWithPIOProjectedCost = highEndWithPIOProjectedUser * costPerUser;
+
+ // ***** for display in Task 3
+ CostPercentagePIO = 0.5;
+
+lowPotentialMonthlySavings   = currentMonthlySpend - lowEndWithPIOCurrentCost;
+highPotentialMonthlySavings = lowEndWithPIOProjectedCost * 1 - highEndWithPIOProjectedCost * 1;
+lowPIOCost   = lowPotentialMonthlySavings   * CostPercentagePIO;
+highPIOCost = highPotentialMonthlySavings * CostPercentagePIO;
+
+lowProjectedYearlySaving  = lowPotentialMonthlySavings  * (1-CostPercentagePIO* 1) * 12;
+highProjectedYearlySaving = highPotentialMonthlySavings * (1-CostPercentagePIO* 1) * 12;
+
+lowPotentialSavingPercent = lowPotentialMonthlySavings / currentMonthlySpend * 100.00;
+highPotentialSavingPercent = highPotentialMonthlySavings / projectedMonthlySpend * 100.00;
+</script>
+      </scriptTask>
+      <userTask id="Results" name="Calculated Savings" activiti:assignee="${assignee}">
+        <extensionElements>
+          <activiti:formProperty id="wf_optionsOutcome" name="Options" type="enum" required="true">
+            <activiti:value id="return" name="Return"></activiti:value>
+            <activiti:value id="inviteOthers" name="Improve Accuracy - Invite Others"></activiti:value>
+            <activiti:value id="emailResults" name="Email Results"></activiti:value>
+            <activiti:value id="learnHow" name="Learn How"></activiti:value>
+          </activiti:formProperty>
+          <activiti:formProperty id="LowPMS" name="low Potential monthly Savings" type="long" expression="${lowPotentialMonthlySavings}" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="HighPMS" name="high Potential monthly Savings" type="long" expression="${highPotentialMonthlySavings}" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="LowPIOCost" name="low Point.io Cost" type="long" expression="${lowPIOCost}" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="HighPIOCost" name="high Point.io Cost" type="long" expression="${highPIOCost}" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="LowPYS" name="low YOUR PROJECTED Yearly SAVINGS are between" type="long" expression="${lowProjectedYearlySaving}" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="HighPYS" name="high YOUR PROJECTED Yearly SAVINGS are between" type="long" expression="${highProjectedYearlySaving}" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="lowPSP" name="low Potential Saving Percentage" type="long" expression="${lowPotentialSavingPercent}" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="HighPSP" name="high Potential Saving Percentage" type="long" expression="${highPotentialSavingPercent}" writable="false"></activiti:formProperty>
+        </extensionElements>
+      </userTask>
+      <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
+      <sequenceFlow id="flow32" sourceRef="calculateResults" targetRef="Results"></sequenceFlow>
+      <sequenceFlow id="flow33" sourceRef="Results" targetRef="exclusivegateway1"></sequenceFlow>
+      <sequenceFlow id="flow34" sourceRef="exclusivegateway1" targetRef="inviteMore">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'inviteOthers'}]]></conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="flow35" sourceRef="exclusivegateway1" targetRef="BasicUserInfo">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'return'}]]></conditionExpression>
+      </sequenceFlow>
+      <serviceTask id="emailRestuls" name="email restuls" activiti:type="mail">
+        <extensionElements>
+          <activiti:field name="to">
+            <activiti:expression>${assignee}</activiti:expression>
+          </activiti:field>
+          <activiti:field name="from">
+            <activiti:string><![CDATA[alert@point.io]]></activiti:string>
+          </activiti:field>
+          <activiti:field name="subject">
+            <activiti:expression>Your savings with SFDC is here. Reference ID: ${execution.getProcessInstanceId()}</activiti:expression>
+          </activiti:field>
+          <activiti:field name="html">
+            <activiti:expression>&lt;div&gt;&lt;h3&gt;Thanks for taking the assessment!&lt;/h3&gt;&lt;/div&gt;
+&lt;div&gt;&lt;h4&gt;Here's the potential savings we calculated for you.&lt;/h4&gt;&lt;/div&gt;
+&lt;div&gt;&lt;h4&gt;Please contact us if you're interested in taking next step to save.&lt;/h4&gt;&lt;/div&gt;
+
+&lt;br&gt;
+&lt;table&gt;
+	&lt;tr align='center'&gt;&lt;td&gt;&amp;nbsp;&lt;/td&gt;&lt;td&gt;from&lt;/td&gt;&lt;td&gt; to &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Potential monthly Savings&lt;/td&gt;&lt;td&gt; $ ${lowPotentialMonthlySavings} &lt;/td&gt;&lt;td&gt; $ ${highPotentialMonthlySavings}  &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Point.io Cost&lt;/td&gt;&lt;td&gt; $ ${lowPIOCost} &lt;/td&gt;&lt;td&gt; $ ${highPIOCost}  &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;YOUR PROJECTED Yearly SAVINGS&lt;/td&gt;&lt;td&gt; $ ${lowProjectedYearlySaving} &lt;/td&gt;&lt;td&gt; $ ${highProjectedYearlySaving}  &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Saving % from your current cost&lt;/td&gt;&lt;td&gt; ${lowPotentialSavingPercent} % &lt;/td&gt;&lt;td&gt; ${highPotentialSavingPercent} %  &lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;
+
+---------------------------------------------------------------&lt;br&gt;
+  |&lt;div&gt;Your reference ID on this assessment is: ${execution.getProcessInstanceId()} |&lt;/div&gt;
+---------------------------------------------------------------</activiti:expression>
+          </activiti:field>
+          <activiti:field name="cc">
+            <activiti:expression>${myEmail}</activiti:expression>
+          </activiti:field>
+        </extensionElements>
+      </serviceTask>
+      <sequenceFlow id="flow43" sourceRef="exclusivegateway1" targetRef="inputEmail">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'emailResults'}]]></conditionExpression>
+      </sequenceFlow>
+      <userTask id="inviteMore" name="Invite Others" activiti:assignee="${assignee}">
+        <extensionElements>
+          <activiti:formProperty id="wf_optionsOutcome" name="Options" type="enum" required="true">
+            <activiti:value id="doneInvite" name="Donw invite"></activiti:value>
+            <activiti:value id="inviteMore" name="Invite More"></activiti:value>
+            <activiti:value id="back" name="back"></activiti:value>
+          </activiti:formProperty>
+          <activiti:formProperty id="party1_email" name="Invite by email, one email per input box" type="string"></activiti:formProperty>
+          <activiti:formProperty id="party2_email" name="email" type="string"></activiti:formProperty>
+          <activiti:formProperty id="party3_email" name="email" type="string"></activiti:formProperty>
+          <activiti:formProperty id="party1_role" name="party1_role" type="string" expression="Approver" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="party2_role" name="party2_role" type="string" expression="Approver" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="party3_role" name="party3_role" type="string" expression="Approver" writable="false"></activiti:formProperty>
+        </extensionElements>
+      </userTask>
+      <sequenceFlow id="flow44" sourceRef="inviteMore" targetRef="exclusivegateway2"></sequenceFlow>
+      <exclusiveGateway id="exclusivegateway2" name="Exclusive Gateway"></exclusiveGateway>
+      <sequenceFlow id="flow46" sourceRef="exclusivegateway2" targetRef="setInviteeRole"></sequenceFlow>
+      <sequenceFlow id="flow47" sourceRef="addInvitesScript" targetRef="exclusivegateway3"></sequenceFlow>
+      <userTask id="InputUserSeg" name="User Segment" activiti:assignee="${assignee}">
+        <extensionElements>
+          <activiti:formProperty id="PercentDedicatedUser" name="What percentage of dedicated users" type="long" required="true"></activiti:formProperty>
+          <activiti:formProperty id="PercentOccasionalUser" name="What percentage of occasional users" type="long" required="true"></activiti:formProperty>
+          <activiti:formProperty id="PercentInfrequentUser" name="What percentage of infrequent users" type="long" required="true"></activiti:formProperty>
+          <activiti:formProperty id="Percent3rdPartyUser" name="What percentage of third-party users?" type="long" required="true"></activiti:formProperty>
+          <activiti:formProperty id="totalPercentage" name="Total Percentage " type="long" expression="${PercentDedicatedUser + PercentOccasionalUser + PercentInfrequentUser + Percent3rdPartyUser}" writable="false"></activiti:formProperty>
+        </extensionElements>
+      </userTask>
+      <sequenceFlow id="flow56" sourceRef="InputUserSeg" targetRef="exclusivegateway4"></sequenceFlow>
+      <sequenceFlow id="flow57" sourceRef="exclusivegateway2" targetRef="Results">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'back'}]]></conditionExpression>
+      </sequenceFlow>
+      <userTask id="LearnHow" name="Learn How">
+        <extensionElements>
+          <activiti:formProperty id="learnHowContent" name="Learn How with point.io" type="string" expression="' temp learn How Content '" writable="false"></activiti:formProperty>
+        </extensionElements>
+      </userTask>
+      <sequenceFlow id="flow59" sourceRef="exclusivegateway1" targetRef="LearnHow">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'learnHow'}]]></conditionExpression>
+      </sequenceFlow>
+      <exclusiveGateway id="exclusivegateway3" name="Exclusive Gateway"></exclusiveGateway>
+      <sequenceFlow id="flow60" sourceRef="exclusivegateway3" targetRef="inviteMore">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'inviteMore'}]]></conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="flow61" sourceRef="exclusivegateway3" targetRef="inputEmail">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'doneInvite'}]]></conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="flow62" sourceRef="exclusivegateway4" targetRef="InputUserSeg">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${(PercentDedicatedUser*100 +  PercentOccasionalUser*100 + PercentInfrequentUser*100 + Percent3rdPartyUser*100) != 100}]]></conditionExpression>
+      </sequenceFlow>
+      <exclusiveGateway id="exclusivegateway4" name="Exclusive Gateway"></exclusiveGateway>
+      <sequenceFlow id="flow63" sourceRef="exclusivegateway4" targetRef="calculateResults"></sequenceFlow>
+      <startEvent id="startevent2" name="Start"></startEvent>
+      <sequenceFlow id="flow66" sourceRef="startevent2" targetRef="BasicUserInfo"></sequenceFlow>
+      <endEvent id="endevent2" name="End"></endEvent>
+      <sequenceFlow id="flow67" sourceRef="LearnHow" targetRef="endevent2"></sequenceFlow>
+      <sequenceFlow id="flow68" sourceRef="emailRestuls" targetRef="endevent2"></sequenceFlow>
+      <userTask id="inputEmail" name="Input email" activiti:assignee="${assignee}">
+        <extensionElements>
+          <activiti:formProperty id="myEmail" name="email me Results" type="string" required="true"></activiti:formProperty>
+        </extensionElements>
+      </userTask>
+      <sequenceFlow id="flow71" sourceRef="inputEmail" targetRef="emailRestuls"></sequenceFlow>
+      <inclusiveGateway id="inclusivegateway1" name="Inclusive Gateway"></inclusiveGateway>
+      <scriptTask id="setInviteeRole" name="set Invitee role" scriptFormat="javascript" activiti:autoStoreVariables="true">
+        <script>party1_role = "Approver";
+party2_role = "Approver";
+party3_role = "Approver";
+</script>
+      </scriptTask>
+      <sequenceFlow id="flow72" sourceRef="setInviteeRole" targetRef="addInvitesScript"></sequenceFlow>
+      <sequenceFlow id="flow73" sourceRef="exclusivegateway3" targetRef="Results">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'back'}]]></conditionExpression>
+      </sequenceFlow>
+    </subProcess>
+    <sequenceFlow id="flow40" sourceRef="SFDCCalculator" targetRef="exclusivegateway5"></sequenceFlow>
+    <serviceTask id="addInitialApprover" name="Add Initial Approver" activiti:class="plugins.wf_Add_Parties"></serviceTask>
+    <sequenceFlow id="flow54" sourceRef="addInitialApprover" targetRef="SFDCCalculator"></sequenceFlow>
+    <scriptTask id="InitialSettings" name="Initial Settings" scriptFormat="javascript" activiti:autoStoreVariables="true">
+      <documentation>set point.io email as default email to start process.</documentation>
+      <script>party1_role = 'Approver';
+if (null == execution.getVariable("party1_email"))
+      {party1_email = "jwang@point.io";}
+
+myEmail = 'info@point.io';
+PercentDedicatedUser = 0.0;
+PercentOccasionalUser = 0.0;
+PercentInfrequentUser = 0.0;
+Percent3rdPartyUser = 0.0;
+PercentageTotal = 0.0;</script>
+    </scriptTask>
+    <sequenceFlow id="flow55" sourceRef="InitialSettings" targetRef="addInitialApprover"></sequenceFlow>
+    <startEvent id="startevent1" name="Start"></startEvent>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <sequenceFlow id="flow65" sourceRef="startevent1" targetRef="InitialSettings"></sequenceFlow>
+    <exclusiveGateway id="exclusivegateway5" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow64" sourceRef="exclusivegateway5" targetRef="endevent1"></sequenceFlow>
+    <sequenceFlow id="flow42" sourceRef="exclusivegateway5" targetRef="SFDCCalculator">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'doneInvite'}]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_SFDCFlow">
+    <bpmndi:BPMNPlane bpmnElement="SFDCFlow" id="BPMNPlane_SFDCFlow">
+      <bpmndi:BPMNShape bpmnElement="SFDCCalculator" id="BPMNShape_SFDCCalculator">
+        <omgdc:Bounds height="392.0" width="1020.0" x="40.0" y="138.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="BasicUserInfo" id="BPMNShape_BasicUserInfo">
+        <omgdc:Bounds height="55.0" width="105.0" x="123.0" y="164.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="addInvitesScript" id="BPMNShape_addInvitesScript">
+        <omgdc:Bounds height="55.0" width="105.0" x="751.0" y="420.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="calculateResults" id="BPMNShape_calculateResults">
+        <omgdc:Bounds height="55.0" width="105.0" x="523.0" y="164.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="Results" id="BPMNShape_Results">
+        <omgdc:Bounds height="55.0" width="105.0" x="653.0" y="164.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway1" id="BPMNShape_exclusivegateway1">
+        <omgdc:Bounds height="40.0" width="40.0" x="685.0" y="250.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="emailRestuls" id="BPMNShape_emailRestuls">
+        <omgdc:Bounds height="55.0" width="105.0" x="410.0" y="420.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="inviteMore" id="BPMNShape_inviteMore">
+        <omgdc:Bounds height="55.0" width="105.0" x="653.0" y="330.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway2" id="BPMNShape_exclusivegateway2">
+        <omgdc:Bounds height="40.0" width="40.0" x="783.0" y="337.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="InputUserSeg" id="BPMNShape_InputUserSeg">
+        <omgdc:Bounds height="55.0" width="105.0" x="273.0" y="164.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="LearnHow" id="BPMNShape_LearnHow">
+        <omgdc:Bounds height="55.0" width="105.0" x="218.0" y="330.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway3" id="BPMNShape_exclusivegateway3">
+        <omgdc:Bounds height="40.0" width="40.0" x="685.0" y="427.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway4" id="BPMNShape_exclusivegateway4">
+        <omgdc:Bounds height="40.0" width="40.0" x="423.0" y="171.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="startevent2" id="BPMNShape_startevent2">
+        <omgdc:Bounds height="35.0" width="35.0" x="53.0" y="174.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent2" id="BPMNShape_endevent2">
+        <omgdc:Bounds height="35.0" width="35.0" x="253.0" y="430.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="inputEmail" id="BPMNShape_inputEmail">
+        <omgdc:Bounds height="55.0" width="105.0" x="410.0" y="337.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="inclusivegateway1" id="BPMNShape_inclusivegateway1">
+        <omgdc:Bounds height="40.0" width="40.0" x="1117.0" y="318.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="setInviteeRole" id="BPMNShape_setInviteeRole">
+        <omgdc:Bounds height="55.0" width="105.0" x="860.0" y="330.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="addInitialApprover" id="BPMNShape_addInitialApprover">
+        <omgdc:Bounds height="55.0" width="105.0" x="494.0" y="18.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="InitialSettings" id="BPMNShape_InitialSettings">
+        <omgdc:Bounds height="55.0" width="105.0" x="281.0" y="18.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="87.0" y="28.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="1120.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway5" id="BPMNShape_exclusivegateway5">
+        <omgdc:Bounds height="40.0" width="40.0" x="1117.0" y="331.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow29" id="BPMNEdge_flow29">
+        <omgdi:waypoint x="228.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="273.0" y="191.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow32" id="BPMNEdge_flow32">
+        <omgdi:waypoint x="628.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="653.0" y="191.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow33" id="BPMNEdge_flow33">
+        <omgdi:waypoint x="705.0" y="219.0"></omgdi:waypoint>
+        <omgdi:waypoint x="705.0" y="250.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow34" id="BPMNEdge_flow34">
+        <omgdi:waypoint x="705.0" y="290.0"></omgdi:waypoint>
+        <omgdi:waypoint x="705.0" y="330.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow35" id="BPMNEdge_flow35">
+        <omgdi:waypoint x="685.0" y="270.0"></omgdi:waypoint>
+        <omgdi:waypoint x="172.0" y="268.0"></omgdi:waypoint>
+        <omgdi:waypoint x="175.0" y="219.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow43" id="BPMNEdge_flow43">
+        <omgdi:waypoint x="705.0" y="290.0"></omgdi:waypoint>
+        <omgdi:waypoint x="462.0" y="337.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow44" id="BPMNEdge_flow44">
+        <omgdi:waypoint x="758.0" y="357.0"></omgdi:waypoint>
+        <omgdi:waypoint x="783.0" y="357.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow46" id="BPMNEdge_flow46">
+        <omgdi:waypoint x="823.0" y="357.0"></omgdi:waypoint>
+        <omgdi:waypoint x="860.0" y="357.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow47" id="BPMNEdge_flow47">
+        <omgdi:waypoint x="751.0" y="447.0"></omgdi:waypoint>
+        <omgdi:waypoint x="725.0" y="447.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow56" id="BPMNEdge_flow56">
+        <omgdi:waypoint x="378.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="423.0" y="191.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow57" id="BPMNEdge_flow57">
+        <omgdi:waypoint x="803.0" y="337.0"></omgdi:waypoint>
+        <omgdi:waypoint x="802.0" y="192.0"></omgdi:waypoint>
+        <omgdi:waypoint x="758.0" y="191.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow59" id="BPMNEdge_flow59">
+        <omgdi:waypoint x="705.0" y="290.0"></omgdi:waypoint>
+        <omgdi:waypoint x="270.0" y="330.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow60" id="BPMNEdge_flow60">
+        <omgdi:waypoint x="705.0" y="427.0"></omgdi:waypoint>
+        <omgdi:waypoint x="705.0" y="385.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow61" id="BPMNEdge_flow61">
+        <omgdi:waypoint x="705.0" y="427.0"></omgdi:waypoint>
+        <omgdi:waypoint x="462.0" y="392.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow62" id="BPMNEdge_flow62">
+        <omgdi:waypoint x="443.0" y="211.0"></omgdi:waypoint>
+        <omgdi:waypoint x="440.0" y="252.0"></omgdi:waypoint>
+        <omgdi:waypoint x="324.0" y="252.0"></omgdi:waypoint>
+        <omgdi:waypoint x="325.0" y="219.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow63" id="BPMNEdge_flow63">
+        <omgdi:waypoint x="463.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="523.0" y="191.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow66" id="BPMNEdge_flow66">
+        <omgdi:waypoint x="88.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="123.0" y="191.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow67" id="BPMNEdge_flow67">
+        <omgdi:waypoint x="270.0" y="385.0"></omgdi:waypoint>
+        <omgdi:waypoint x="270.0" y="430.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow68" id="BPMNEdge_flow68">
+        <omgdi:waypoint x="410.0" y="447.0"></omgdi:waypoint>
+        <omgdi:waypoint x="288.0" y="447.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow71" id="BPMNEdge_flow71">
+        <omgdi:waypoint x="462.0" y="392.0"></omgdi:waypoint>
+        <omgdi:waypoint x="462.0" y="420.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow72" id="BPMNEdge_flow72">
+        <omgdi:waypoint x="912.0" y="385.0"></omgdi:waypoint>
+        <omgdi:waypoint x="803.0" y="420.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow73" id="BPMNEdge_flow73">
+        <omgdi:waypoint x="705.0" y="467.0"></omgdi:waypoint>
+        <omgdi:waypoint x="704.0" y="496.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1012.0" y="496.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1012.0" y="192.0"></omgdi:waypoint>
+        <omgdi:waypoint x="758.0" y="191.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow40" id="BPMNEdge_flow40">
+        <omgdi:waypoint x="1060.0" y="334.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1117.0" y="351.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow54" id="BPMNEdge_flow54">
+        <omgdi:waypoint x="546.0" y="73.0"></omgdi:waypoint>
+        <omgdi:waypoint x="550.0" y="138.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow55" id="BPMNEdge_flow55">
+        <omgdi:waypoint x="386.0" y="45.0"></omgdi:waypoint>
+        <omgdi:waypoint x="494.0" y="45.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow65" id="BPMNEdge_flow65">
+        <omgdi:waypoint x="122.0" y="45.0"></omgdi:waypoint>
+        <omgdi:waypoint x="281.0" y="45.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow64" id="BPMNEdge_flow64">
+        <omgdi:waypoint x="1137.0" y="331.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1137.0" y="235.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow42" id="BPMNEdge_flow42">
+        <omgdi:waypoint x="1137.0" y="371.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1133.0" y="568.0"></omgdi:waypoint>
+        <omgdi:waypoint x="504.0" y="568.0"></omgdi:waypoint>
+        <omgdi:waypoint x="550.0" y="530.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
