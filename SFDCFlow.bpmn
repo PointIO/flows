@@ -197,9 +197,9 @@ highPotentialSavingPercent = highPotentialMonthlySavings / projectedMonthlySpend
           <activiti:formProperty id="party1_email" name="Invite by email, one email per input box" type="string"></activiti:formProperty>
           <activiti:formProperty id="party2_email" name="email" type="string"></activiti:formProperty>
           <activiti:formProperty id="party3_email" name="email" type="string"></activiti:formProperty>
-          <activiti:formProperty id="party1_role" name="party1_role" type="string" expression="Approver" writable="false"></activiti:formProperty>
-          <activiti:formProperty id="party2_role" name="party2_role" type="string" expression="Approver" writable="false"></activiti:formProperty>
-          <activiti:formProperty id="party3_role" name="party3_role" type="string" expression="Approver" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="party1_role" name="party1_role" type="string" expression="Approver" readable="false" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="party2_role" name="party2_role" type="string" expression="Approver" readable="false" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="party3_role" name="party3_role" type="string" expression="Approver" readable="false" writable="false"></activiti:formProperty>
         </extensionElements>
       </userTask>
       <sequenceFlow id="flow44" sourceRef="inviteMore" targetRef="exclusivegateway2"></sequenceFlow>
@@ -219,7 +219,7 @@ highPotentialSavingPercent = highPotentialMonthlySavings / projectedMonthlySpend
       <sequenceFlow id="flow57" sourceRef="exclusivegateway2" targetRef="Results">
         <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'back'}]]></conditionExpression>
       </sequenceFlow>
-      <userTask id="LearnHow" name="Learn How">
+      <userTask id="LearnHow" name="Learn How" activiti:assignee="${assignee}">
         <extensionElements>
           <activiti:formProperty id="learnHowContent" name="Learn How with point.io" type="string" expression="' temp learn How Content '" writable="false"></activiti:formProperty>
         </extensionElements>
@@ -255,7 +255,7 @@ highPotentialSavingPercent = highPotentialMonthlySavings / projectedMonthlySpend
         <script>party1_role = "Approver";
 party2_role = "Approver";
 party3_role = "Approver";
-</script>
+addedInvitee = true;</script>
       </scriptTask>
       <sequenceFlow id="flow72" sourceRef="setInviteeRole" targetRef="addInvitesScript"></sequenceFlow>
       <sequenceFlow id="flow73" sourceRef="exclusivegateway3" targetRef="Results">
@@ -270,22 +270,24 @@ party3_role = "Approver";
       <script>party1_role = 'Approver';
 if (null == execution.getVariable("party1_email"))
       {party1_email = "jwang@point.io";}
-
-myEmail = 'info@point.io';
-PercentDedicatedUser = 0.0;
-PercentOccasionalUser = 0.0;
-PercentInfrequentUser = 0.0;
-Percent3rdPartyUser = 0.0;
-PercentageTotal = 0.0;</script>
+addedInvitee = false;
+myEmail = 'jwang@point.io';
+PercentDedicatedUser = 0.75;
+PercentOccasionalUser = 0.1;
+PercentInfrequentUser = 0.1;
+Percent3rdPartyUser = 0.05;
+PercentageTotal = 1.0;</script>
     </scriptTask>
     <sequenceFlow id="flow55" sourceRef="InitialSettings" targetRef="addInitialApprover"></sequenceFlow>
     <startEvent id="startevent1" name="Start"></startEvent>
     <endEvent id="endevent1" name="End"></endEvent>
     <sequenceFlow id="flow65" sourceRef="startevent1" targetRef="InitialSettings"></sequenceFlow>
     <exclusiveGateway id="exclusivegateway5" name="Exclusive Gateway"></exclusiveGateway>
-    <sequenceFlow id="flow64" sourceRef="exclusivegateway5" targetRef="endevent1"></sequenceFlow>
+    <sequenceFlow id="flow64" sourceRef="exclusivegateway5" targetRef="endevent1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${!addedInvitee}]]></conditionExpression>
+    </sequenceFlow>
     <sequenceFlow id="flow42" sourceRef="exclusivegateway5" targetRef="SFDCCalculator">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'doneInvite'}]]></conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${addedInvitee}]]></conditionExpression>
     </sequenceFlow>
   </process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_SFDCFlow">
