@@ -22,7 +22,8 @@
       <scriptTask id="calculateResults" name="Calculate Resutls" scriptFormat="javascript" activiti:autoStoreVariables="true">
         <script>// ***** reset party1_email to null;
 party1_email = null;
- 
+ addedInvitee = false;
+
 // ****** set crrent user map
 userLevelCostMap=Packages.java.util.HashMap();
 userLevelCostMap.put("ContactManager",   5.00);
