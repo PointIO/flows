@@ -3,22 +3,22 @@
   <process id="SFDCFlow" name="SFDCalculatorFlow" isExecutable="true">
     <subProcess id="SFDCCalculator" name="SFDC Calculator">
       <multiInstanceLoopCharacteristics isSequential="false" activiti:collection="Approver_LIST_COL" activiti:elementVariable="assignee"></multiInstanceLoopCharacteristics>
-      <userTask id="BasicUserInfo" name="Basic User Info" activiti:assignee="${assignee}">
+      <userTask id="BasicUserInfo" name="Step 1 of 2" activiti:assignee="${assignee}">
         <extensionElements>
-          <activiti:formProperty id="UserCurrent" name="How many Salesforce Accounts do you currently pay for?" type="long" required="true"></activiti:formProperty>
-          <activiti:formProperty id="UserNew" name="How many new SFDC Accounts have been requested?" type="long" required="true"></activiti:formProperty>
-          <activiti:formProperty id="UserLevel" name="Choose your SFDC account level? dropdown" type="enum" required="true">
+          <activiti:formProperty id="UserCurrent" name="How many Salesforce.com Accounts do you currently pay for?" type="long" required="true"></activiti:formProperty>
+          <activiti:formProperty id="UserNew" name="How many new Salesforce.com Accounts have been requested?" type="long" required="true"></activiti:formProperty>
+          <activiti:formProperty id="UserLevel" name="Choose your typical Salesforce.com account level?" type="enum" required="true">
+            <activiti:value id="NotSure" name="Not Sure"></activiti:value>
             <activiti:value id="ContactManager" name="Contact Manager"></activiti:value>
             <activiti:value id="Group" name="Group"></activiti:value>
             <activiti:value id="Professional" name="Professional"></activiti:value>
             <activiti:value id="Enterprise" name="Enterprise"></activiti:value>
             <activiti:value id="Performance" name="Performance"></activiti:value>
-            <activiti:value id="NotSure" name="Not Sure"></activiti:value>
           </activiti:formProperty>
         </extensionElements>
       </userTask>
       <sequenceFlow id="flow29" sourceRef="BasicUserInfo" targetRef="InputUserSeg"></sequenceFlow>
-      <serviceTask id="addInvitesScript" name="Add invites" activiti:class="plugins.wf_Add_Parties"></serviceTask>
+      <serviceTask id="addInvitesScript" name="Add Invitees" activiti:class="plugins.wf_Add_Parties"></serviceTask>
       <scriptTask id="calculateResults" name="Calculate Resutls" scriptFormat="javascript" activiti:autoStoreVariables="true">
         <script>// ***** reset party1_email to null;
 party1_email = null;
@@ -126,18 +126,28 @@ lowPotentialSavingPercent = lowPotentialMonthlySavings / currentMonthlySpend * 1
 highPotentialSavingPercent = highPotentialMonthlySavings / projectedMonthlySpend * 100.00;
 
 showYearlySavings = " $" + lowProjectedYearlySaving.toFixed(2) + " ~ $" + highProjectedYearlySaving.toFixed(2);
-showSavingsPercentage = " " + lowPotentialSavingPercent.toFixed(2) + "% ~ " + highPotentialSavingPercent.toFixed(2) + "%";</script>
+showSavingsPercentage = " " + lowPotentialSavingPercent.toFixed(2) + "% ~ " + highPotentialSavingPercent.toFixed(2) + "%";
+
+//***** set for display
+displayPercentDedicatedUser = PercentDedicatedUser * 100;
+displayPercentOccasionalUser = PercentOccasionalUser * 100;
+displayPercentInfrequentUser = PercentInfrequentUser * 100;
+displayPercent3rdPartyUser = Percent3rdPartyUser * 100;
+displaylowPotentialSavingPercent = lowPotentialSavingPercent * 100;
+displayhighPotentialSavingPercent = highPotentialSavingPercent * 100;
+displayhighProjectedYearlySaving = "$" + highProjectedYearlySaving.toFixed(2);
+</script>
       </scriptTask>
-      <userTask id="Results" name="Calculated Savings" activiti:assignee="${assignee}">
+      <userTask id="Results" name="Your Savings" activiti:assignee="${assignee}">
         <extensionElements>
           <activiti:formProperty id="wf_optionsOutcome" name="Options" type="enum" required="true">
-            <activiti:value id="return" name="Return"></activiti:value>
-            <activiti:value id="inviteOthers" name="Improve Accuracy - Invite Others"></activiti:value>
-            <activiti:value id="emailResults" name="Email Results"></activiti:value>
-            <activiti:value id="learnHow" name="Learn How"></activiti:value>
+            <activiti:value id="return" name="Rerun"></activiti:value>
+            <activiti:value id="inviteOthers" name="Improve Accuracy"></activiti:value>
+            <activiti:value id="emailResults" name="Email Details"></activiti:value>
+            <activiti:value id="learnHow" name="Learn More"></activiti:value>
           </activiti:formProperty>
-          <activiti:formProperty id="showYearlySavings" name="YOUR PROJECTED Yearly SAVINGS are between:" type="string" writable="false"></activiti:formProperty>
-          <activiti:formProperty id="showSavingsPercentage" name="YOUR PROJECTED SAVINGS % between:" type="string" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="showYearlySavings" name="Your Estimated Yearly SAVINGS are: " type="string" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="showSavingsPercentage" name="which is between:" type="string" writable="false"></activiti:formProperty>
         </extensionElements>
       </userTask>
       <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
@@ -149,7 +159,7 @@ showSavingsPercentage = " " + lowPotentialSavingPercent.toFixed(2) + "% ~ " + hi
       <sequenceFlow id="flow35" sourceRef="exclusivegateway1" targetRef="BasicUserInfo">
         <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'return'}]]></conditionExpression>
       </sequenceFlow>
-      <serviceTask id="emailRestuls" name="email restuls" activiti:type="mail">
+      <serviceTask id="emailRestuls" name="Send Results" activiti:type="mail">
         <extensionElements>
           <activiti:field name="to">
             <activiti:expression>${myEmail}</activiti:expression>
@@ -158,37 +168,64 @@ showSavingsPercentage = " " + lowPotentialSavingPercent.toFixed(2) + "% ~ " + hi
             <activiti:string><![CDATA[alert@point.io]]></activiti:string>
           </activiti:field>
           <activiti:field name="subject">
-            <activiti:expression>Your savings with SFDC is here. Reference ID: ${execution.getProcessInstanceId()}</activiti:expression>
+            <activiti:string><![CDATA[Salesforce.com Estimator Results from Point.io]]></activiti:string>
           </activiti:field>
           <activiti:field name="html">
-            <activiti:expression>&lt;div&gt;&lt;h3&gt;Thanks for taking the assessment!&lt;/h3&gt;&lt;/div&gt;
+            <activiti:expression>&lt;div&gt;&lt;h3&gt;Thanks for trying the Salesforce Explorer Saving estimator!&lt;/h3&gt;&lt;/div&gt;
 &lt;div&gt;&lt;h4&gt;Here's the potential savings we calculated for you.&lt;/h4&gt;&lt;/div&gt;
-&lt;div&gt;&lt;h4&gt;Please contact us if you're interested in taking next step to save.&lt;/h4&gt;&lt;/div&gt;
+&lt;div&gt;&lt;h4&gt;Please &lt;a href="http://point.io/quick-contact"&gt;contact us&lt;/a&gt; if you're interested in saving ${displayhighProjectedYearlySaving} or more each year on your Salesforce.com bill.&lt;/h4&gt;&lt;/div&gt;
 
 &lt;br&gt;
+&lt;strong&gt;Your responses:&lt;/strong&gt;
+&lt;table&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;How many Salesforce.com Accounts do you currently pay for?&lt;/td&gt;&lt;td&gt; $ ${UserCurrent} &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;How many new Salesforce.com Accounts have been requested?&lt;/td&gt;&lt;td&gt; $ ${UserNew} &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Your typical Salesforce.com account level?&lt;/td&gt;&lt;td&gt; ${UserLevel} (${costPerUser} per user/per mo)&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of Dedicated Users:&lt;/td&gt;&lt;td&gt; ${displayPercentDedicatedUser} %&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of Occasional Users:&lt;/td&gt;&lt;td&gt; ${displayPercentOccasionalUser} %&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of Infrequent Users:&lt;/td&gt;&lt;td&gt; ${displayPercentInfrequentUser} %&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of 3rd Party Users:&lt;/td&gt;&lt;td&gt; ${displayPercent3rdPartyUser} %&lt;/td&gt;&lt;/tr&gt;		
+&lt;/table&gt;display
+&lt;/br&gt;
+&lt;strong&gt;Detailed estimates:&lt;/strong&gt;
 &lt;table&gt;
 	&lt;tr align='center'&gt;&lt;td&gt;&amp;nbsp;&lt;/td&gt;&lt;td&gt;from&lt;/td&gt;&lt;td&gt; to &lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;Potential monthly Savings&lt;/td&gt;&lt;td&gt; $ ${lowPotentialMonthlySavings} &lt;/td&gt;&lt;td&gt; $ ${highPotentialMonthlySavings}  &lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;Point.io Cost&lt;/td&gt;&lt;td&gt; $ ${lowPIOCost} &lt;/td&gt;&lt;td&gt; $ ${highPIOCost}  &lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;YOUR PROJECTED Yearly SAVINGS&lt;/td&gt;&lt;td&gt; $ ${lowProjectedYearlySaving} &lt;/td&gt;&lt;td&gt; $ ${highProjectedYearlySaving}  &lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;Saving % from your current cost&lt;/td&gt;&lt;td&gt; ${lowPotentialSavingPercent} % &lt;/td&gt;&lt;td&gt; ${highPotentialSavingPercent} %  &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Your estimated Yearly SAVINGS is between:&lt;/td&gt;&lt;td style="border: 1px solid black;"&gt; ${showYearlySavings}&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Saving % from your current cost:&lt;/td&gt;&lt;td style="border: 1px solid black;"&gt; ${showSavingsPercentage}&lt;/td&gt;&lt;/tr&gt;
 &lt;/table&gt;
+&lt;/br&gt;
+&lt;div&gt;Your reference ID on this assessment is: ${execution.getProcessInstanceId()}.&lt;/div&gt;
+&lt;/br&gt;
+Want to see more about how save you money while still leveraging the power of Salesforce.com? 
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://point.io/SalesforceSavings"&gt;Salesforce Explorer Online&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.youtube.com/watch?v=NDIRGEsKUec"&gt;Youtube Video on Power Reporting&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.youtube.com/watch?v=hWDPYq5kKEw"&gt;Youtube Video on Power Processing&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 
----------------------------------------------------------------&lt;br&gt;
-  |&lt;div&gt;Your reference ID on this assessment is: ${execution.getProcessInstanceId()} |&lt;/div&gt;
----------------------------------------------------------------</activiti:expression>
+Sincerely,&lt;/br&gt;
+Point.io Team&lt;/br&gt;
+&lt;/br&gt;
+www.point.io&lt;/br&gt;
+contact@point.io&lt;/br&gt;
+6100-994-9660&lt;/br&gt;
+&lt;/br&gt;
+Point.io&lt;/br&gt;
+3401 Market Street&lt;/br&gt;
+Suite 202&lt;/br&gt;
+Philadelphia, PA 19104&lt;/br&gt;</activiti:expression>
           </activiti:field>
         </extensionElements>
       </serviceTask>
       <sequenceFlow id="flow43" sourceRef="exclusivegateway1" targetRef="inputEmail">
         <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'emailResults'}]]></conditionExpression>
       </sequenceFlow>
-      <userTask id="inviteMore" name="Invite Others" activiti:assignee="${assignee}">
+      <userTask id="inviteMore" name="Improve Accuracy" activiti:assignee="${assignee}">
         <extensionElements>
           <activiti:formProperty id="wf_optionsOutcome" name="Options" type="enum" required="true">
-            <activiti:value id="doneInvite" name="Donw invite"></activiti:value>
+            <activiti:value id="doneInvite" name="Send"></activiti:value>
             <activiti:value id="inviteMore" name="Invite More"></activiti:value>
-            <activiti:value id="back" name="back"></activiti:value>
+            <activiti:value id="back" name="Cancel"></activiti:value>
           </activiti:formProperty>
           <activiti:formProperty id="party1_email" name="Invite by email, one email per input box" type="string"></activiti:formProperty>
           <activiti:formProperty id="party2_email" name="email" type="string"></activiti:formProperty>
@@ -202,12 +239,12 @@ showSavingsPercentage = " " + lowPotentialSavingPercent.toFixed(2) + "% ~ " + hi
       <exclusiveGateway id="exclusivegateway2" name="Exclusive Gateway"></exclusiveGateway>
       <sequenceFlow id="flow46" sourceRef="exclusivegateway2" targetRef="setInviteeRole"></sequenceFlow>
       <sequenceFlow id="flow47" sourceRef="addInvitesScript" targetRef="exclusivegateway3"></sequenceFlow>
-      <userTask id="InputUserSeg" name="User Segment" activiti:assignee="${assignee}">
+      <userTask id="InputUserSeg" name="Step 2 of 2" activiti:assignee="${assignee}">
         <extensionElements>
-          <activiti:formProperty id="PercentDedicatedUser" name="What percentage of dedicated users" type="long" required="true"></activiti:formProperty>
-          <activiti:formProperty id="PercentOccasionalUser" name="What percentage of occasional users" type="long" required="true"></activiti:formProperty>
-          <activiti:formProperty id="PercentInfrequentUser" name="What percentage of infrequent users" type="long" required="true"></activiti:formProperty>
-          <activiti:formProperty id="Percent3rdPartyUser" name="What percentage of third-party users?" type="long" required="true"></activiti:formProperty>
+          <activiti:formProperty id="PercentDedicatedUser" name="What percentage are dedicated users?" type="long" required="true"></activiti:formProperty>
+          <activiti:formProperty id="PercentOccasionalUser" name="What percentage are occasional users?" type="long" required="true"></activiti:formProperty>
+          <activiti:formProperty id="PercentInfrequentUser" name="What percentage are infrequent users?" type="long" required="true"></activiti:formProperty>
+          <activiti:formProperty id="Percent3rdPartyUser" name="What percentage are third-party users?" type="long" required="true"></activiti:formProperty>
           <activiti:formProperty id="totalPercentage" name="Total Percentage " type="long" expression="${PercentDedicatedUser + PercentOccasionalUser + PercentInfrequentUser + Percent3rdPartyUser}" writable="false"></activiti:formProperty>
         </extensionElements>
       </userTask>
@@ -239,15 +276,15 @@ showSavingsPercentage = " " + lowPotentialSavingPercent.toFixed(2) + "% ~ " + hi
       <sequenceFlow id="flow66" sourceRef="startevent2" targetRef="exclusivegateway6"></sequenceFlow>
       <endEvent id="endevent2" name="End"></endEvent>
       <sequenceFlow id="flow67" sourceRef="LearnHow" targetRef="endevent2"></sequenceFlow>
-      <sequenceFlow id="flow68" sourceRef="emailRestuls" targetRef="endevent2"></sequenceFlow>
-      <userTask id="inputEmail" name="Input email" activiti:assignee="${assignee}">
+      <sequenceFlow id="flow68" sourceRef="emailRestuls" targetRef="Results"></sequenceFlow>
+      <userTask id="inputEmail" name="Forward Results" activiti:assignee="${assignee}">
         <extensionElements>
-          <activiti:formProperty id="myEmail" name="email me Results" type="string" required="true"></activiti:formProperty>
+          <activiti:formProperty id="myEmail" name="Your email" type="string" required="true"></activiti:formProperty>
         </extensionElements>
       </userTask>
       <sequenceFlow id="flow71" sourceRef="inputEmail" targetRef="emailRestuls"></sequenceFlow>
       <inclusiveGateway id="inclusivegateway1" name="Inclusive Gateway"></inclusiveGateway>
-      <scriptTask id="setInviteeRole" name="set Invitee role" scriptFormat="javascript" activiti:autoStoreVariables="true">
+      <scriptTask id="setInviteeRole" name="Set Invitee Role" scriptFormat="javascript" activiti:autoStoreVariables="true">
         <script>party1_role = "Approver";
 party2_role = "Approver";
 party3_role = "Approver";
@@ -268,7 +305,7 @@ addedInvitee = true;</script>
       <scriptTask id="scripttask1" name="Invitee settings" scriptFormat="javascript" activiti:autoStoreVariables="true">
         <script>myEmail = assignee;</script>
       </scriptTask>
-      <serviceTask id="mailtask1" name="Invite email" activiti:type="mail">
+      <serviceTask id="mailtask1" name="Send Invite" activiti:type="mail">
         <extensionElements>
           <activiti:field name="to">
             <activiti:expression>${myEmail}</activiti:expression>
@@ -299,7 +336,7 @@ Link URL]]></activiti:string>
       <documentation>set point.io email as default email to start process.</documentation>
       <script>party1_role = 'Approver';
 if (null == execution.getVariable("party1_email"))
-      {party1_email = "jwang@point.io";}
+      {party1_email = wf_currentAssignee;}
 addedInvitee = false;
 myEmail = "";
 PercentDedicatedUser = 0.75;
@@ -477,8 +514,8 @@ PercentageTotal = 1.0;</script>
         <omgdi:waypoint x="382.0" y="452.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow68" id="BPMNEdge_flow68">
-        <omgdi:waypoint x="522.0" y="469.0"></omgdi:waypoint>
-        <omgdi:waypoint x="400.0" y="469.0"></omgdi:waypoint>
+        <omgdi:waypoint x="574.0" y="442.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="241.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow71" id="BPMNEdge_flow71">
         <omgdi:waypoint x="574.0" y="414.0"></omgdi:waypoint>
