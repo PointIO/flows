@@ -141,10 +141,10 @@ displayhighProjectedYearlySaving = "$" + highProjectedYearlySaving.toFixed(2);
       <userTask id="Results" name="Your Savings" activiti:assignee="${assignee}">
         <extensionElements>
           <activiti:formProperty id="wf_optionsOutcome" name="Options" type="enum" required="true">
-            <activiti:value id="return" name="Rerun"></activiti:value>
-            <activiti:value id="inviteOthers" name="Improve Accuracy"></activiti:value>
             <activiti:value id="emailResults" name="Email Details"></activiti:value>
-            <activiti:value id="learnHow" name="Learn More"></activiti:value>
+            <activiti:value id="inviteOthers" name="Improve Accuracy"></activiti:value>
+            <activiti:value id="return" name="Redo"></activiti:value>
+            <activiti:value id="learnHow" name="Finish"></activiti:value>
           </activiti:formProperty>
           <activiti:formProperty id="showYearlySavings" name="Your Estimated Yearly SAVINGS are: " type="string" writable="false"></activiti:formProperty>
           <activiti:formProperty id="showSavingsPercentage" name="which is between:" type="string" writable="false"></activiti:formProperty>
@@ -215,6 +215,9 @@ Point.io&lt;/br&gt;
 Suite 202&lt;/br&gt;
 Philadelphia, PA 19104&lt;/br&gt;</activiti:expression>
           </activiti:field>
+          <activiti:field name="cc">
+            <activiti:string><![CDATA[contact@point.io]]></activiti:string>
+          </activiti:field>
         </extensionElements>
       </serviceTask>
       <sequenceFlow id="flow43" sourceRef="exclusivegateway1" targetRef="inputEmail">
@@ -252,12 +255,7 @@ Philadelphia, PA 19104&lt;/br&gt;</activiti:expression>
       <sequenceFlow id="flow57" sourceRef="exclusivegateway2" targetRef="Results">
         <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'back'}]]></conditionExpression>
       </sequenceFlow>
-      <userTask id="LearnHow" name="Learn How" activiti:assignee="${assignee}">
-        <extensionElements>
-          <activiti:formProperty id="learnHowContent" name="Learn How with point.io" type="string" expression="' temp learn How Content '" writable="false"></activiti:formProperty>
-        </extensionElements>
-      </userTask>
-      <sequenceFlow id="flow59" sourceRef="exclusivegateway1" targetRef="LearnHow">
+      <sequenceFlow id="flow59" sourceRef="exclusivegateway1" targetRef="endevent2">
         <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'learnHow'}]]></conditionExpression>
       </sequenceFlow>
       <exclusiveGateway id="exclusivegateway3" name="Exclusive Gateway"></exclusiveGateway>
@@ -275,11 +273,10 @@ Philadelphia, PA 19104&lt;/br&gt;</activiti:expression>
       <startEvent id="startevent2" name="Start"></startEvent>
       <sequenceFlow id="flow66" sourceRef="startevent2" targetRef="exclusivegateway6"></sequenceFlow>
       <endEvent id="endevent2" name="End"></endEvent>
-      <sequenceFlow id="flow67" sourceRef="LearnHow" targetRef="endevent2"></sequenceFlow>
       <sequenceFlow id="flow68" sourceRef="emailRestuls" targetRef="Results"></sequenceFlow>
       <userTask id="inputEmail" name="Forward Results" activiti:assignee="${assignee}">
         <extensionElements>
-          <activiti:formProperty id="myEmail" name="Your email" type="string" required="true"></activiti:formProperty>
+          <activiti:formProperty id="myEmail" name="Send to this email" type="string" required="true"></activiti:formProperty>
         </extensionElements>
       </userTask>
       <sequenceFlow id="flow71" sourceRef="inputEmail" targetRef="emailRestuls"></sequenceFlow>
@@ -363,6 +360,9 @@ Point.io&lt;/br&gt;
 Suite 202&lt;/br&gt;
 Philadelphia, PA 19104&lt;/br&gt;</activiti:expression>
           </activiti:field>
+          <activiti:field name="cc">
+            <activiti:string><![CDATA[contact@point.io]]></activiti:string>
+          </activiti:field>
         </extensionElements>
       </serviceTask>
       <sequenceFlow id="flow75" sourceRef="exclusivegateway6" targetRef="scripttask1">
@@ -431,9 +431,6 @@ PercentageTotal = 1.0;</script>
       <bpmndi:BPMNShape bpmnElement="InputUserSeg" id="BPMNShape_InputUserSeg">
         <omgdc:Bounds height="55.0" width="105.0" x="380.0" y="186.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="LearnHow" id="BPMNShape_LearnHow">
-        <omgdc:Bounds height="55.0" width="105.0" x="330.0" y="352.0"></omgdc:Bounds>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="exclusivegateway3" id="BPMNShape_exclusivegateway3">
         <omgdc:Bounds height="40.0" width="40.0" x="797.0" y="449.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
@@ -444,7 +441,7 @@ PercentageTotal = 1.0;</script>
         <omgdc:Bounds height="35.0" width="35.0" x="100.0" y="196.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="endevent2" id="BPMNShape_endevent2">
-        <omgdc:Bounds height="35.0" width="35.0" x="365.0" y="452.0"></omgdc:Bounds>
+        <omgdc:Bounds height="35.0" width="35.0" x="1000.0" y="275.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="inputEmail" id="BPMNShape_inputEmail">
         <omgdc:Bounds height="55.0" width="105.0" x="522.0" y="359.0"></omgdc:Bounds>
@@ -526,8 +523,8 @@ PercentageTotal = 1.0;</script>
         <omgdi:waypoint x="870.0" y="213.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow59" id="BPMNEdge_flow59">
-        <omgdi:waypoint x="817.0" y="312.0"></omgdi:waypoint>
-        <omgdi:waypoint x="382.0" y="352.0"></omgdi:waypoint>
+        <omgdi:waypoint x="837.0" y="292.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1000.0" y="292.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow60" id="BPMNEdge_flow60">
         <omgdi:waypoint x="817.0" y="449.0"></omgdi:waypoint>
@@ -550,10 +547,6 @@ PercentageTotal = 1.0;</script>
       <bpmndi:BPMNEdge bpmnElement="flow66" id="BPMNEdge_flow66">
         <omgdi:waypoint x="135.0" y="213.0"></omgdi:waypoint>
         <omgdi:waypoint x="150.0" y="213.0"></omgdi:waypoint>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="flow67" id="BPMNEdge_flow67">
-        <omgdi:waypoint x="382.0" y="407.0"></omgdi:waypoint>
-        <omgdi:waypoint x="382.0" y="452.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow68" id="BPMNEdge_flow68">
         <omgdi:waypoint x="574.0" y="442.0"></omgdi:waypoint>
