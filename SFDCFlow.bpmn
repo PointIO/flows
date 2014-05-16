@@ -178,8 +178,8 @@ displayhighProjectedYearlySaving = "$" + highProjectedYearlySaving.toFixed(2);
 &lt;br&gt;
 &lt;strong&gt;Your responses:&lt;/strong&gt;
 &lt;table&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;How many Salesforce.com Accounts do you currently pay for?&lt;/td&gt;&lt;td&gt; $ ${UserCurrent} &lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;How many new Salesforce.com Accounts have been requested?&lt;/td&gt;&lt;td&gt; $ ${UserNew} &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;How many Salesforce.com Accounts do you currently pay for?&lt;/td&gt;&lt;td&gt; ${UserCurrent} &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;How many new Salesforce.com Accounts have been requested?&lt;/td&gt;&lt;td&gt; ${UserNew} &lt;/td&gt;&lt;/tr&gt;
 	&lt;tr align='right'&gt;&lt;td&gt;Your typical Salesforce.com account level?&lt;/td&gt;&lt;td&gt; ${UserLevel} (${costPerUser} per user/per mo)&lt;/td&gt;&lt;/tr&gt;
 	&lt;tr align='right'&gt;&lt;td&gt;% of Dedicated Users:&lt;/td&gt;&lt;td&gt; ${displayPercentDedicatedUser} %&lt;/td&gt;&lt;/tr&gt;
 	&lt;tr align='right'&gt;&lt;td&gt;% of Occasional Users:&lt;/td&gt;&lt;td&gt; ${displayPercentOccasionalUser} %&lt;/td&gt;&lt;/tr&gt;
@@ -208,7 +208,7 @@ Point.io Team&lt;/br&gt;
 &lt;/br&gt;
 www.point.io&lt;/br&gt;
 contact@point.io&lt;/br&gt;
-6100-994-9660&lt;/br&gt;
+610-994-9660&lt;/br&gt;
 &lt;/br&gt;
 Point.io&lt;/br&gt;
 3401 Market Street&lt;/br&gt;
@@ -317,9 +317,51 @@ addedInvitee = true;</script>
             <activiti:expression>You are invited to participate in a SFDC saving assessment. Reference ID: ${execution.getProcessInstanceId()}</activiti:expression>
           </activiti:field>
           <activiti:field name="html">
-            <activiti:string><![CDATA[Check the input and give your opinions, see what savings could be there.
-<br>
-Link URL]]></activiti:string>
+            <activiti:expression>&lt;div&gt;&lt;h3&gt;Your colleague thought you could add important detail to an estimate for saving on your yearly Salesforce.com licenses.&lt;/h3&gt;&lt;/div&gt;&lt;br&gt;
+http://api.point.io/wizard/index.cfm?procid=${execution.getProcessInstanceId()}&lt;br&gt;
+&lt;br&gt;
+&lt;div&gt;&lt;h4&gt;Based on the initial response, there is a potential savings of ${displayhighProjectedYearlySaving}.&lt;/h4&gt;&lt;/div&gt;
+&lt;div&gt;&lt;h4&gt;Please follow this link &lt;a href="http://point.io/quick-contact"&gt;to refine the calculations&lt;/a&gt; and improve the accuracy of the result.&lt;/h4&gt;&lt;/div&gt;
+
+&lt;br&gt;
+&lt;strong&gt;Your colleague's responses:&lt;/strong&gt;
+&lt;table&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;How many Salesforce.com Accounts do you currently pay for?&lt;/td&gt;&lt;td&gt; ${UserCurrent} &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;How many new Salesforce.com Accounts have been requested?&lt;/td&gt;&lt;td&gt; ${UserNew} &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Your typical Salesforce.com account level?&lt;/td&gt;&lt;td&gt; ${UserLevel} (${costPerUser} per user/per mo)&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of Dedicated Users:&lt;/td&gt;&lt;td&gt; ${displayPercentDedicatedUser} %&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of Occasional Users:&lt;/td&gt;&lt;td&gt; ${displayPercentOccasionalUser} %&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of Infrequent Users:&lt;/td&gt;&lt;td&gt; ${displayPercentInfrequentUser} %&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of 3rd Party Users:&lt;/td&gt;&lt;td&gt; ${displayPercent3rdPartyUser} %&lt;/td&gt;&lt;/tr&gt;		
+&lt;/table&gt;display
+&lt;/br&gt;
+&lt;strong&gt;Detailed estimates:&lt;/strong&gt;
+&lt;table&gt;
+	&lt;tr align='center'&gt;&lt;td&gt;&amp;nbsp;&lt;/td&gt;&lt;td&gt;from&lt;/td&gt;&lt;td&gt; to &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Your estimated Yearly SAVINGS is between:&lt;/td&gt;&lt;td style="border: 1px solid black;"&gt; ${showYearlySavings}&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Saving % from your current cost:&lt;/td&gt;&lt;td style="border: 1px solid black;"&gt; ${showSavingsPercentage}&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/br&gt;
+&lt;div&gt;Your reference ID on this assessment is: ${execution.getProcessInstanceId()}.&lt;/div&gt;
+&lt;/br&gt;
+Want to see more about how save you money while still leveraging the power of Salesforce.com? 
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://point.io/SalesforceSavings"&gt;Salesforce Explorer Online&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.youtube.com/watch?v=NDIRGEsKUec"&gt;Youtube Video on Power Reporting&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.youtube.com/watch?v=hWDPYq5kKEw"&gt;Youtube Video on Power Processing&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+Sincerely,&lt;/br&gt;
+Point.io Team&lt;/br&gt;
+&lt;/br&gt;
+www.point.io&lt;/br&gt;
+contact@point.io&lt;/br&gt;
+610-994-9660&lt;/br&gt;
+&lt;/br&gt;
+Point.io&lt;/br&gt;
+3401 Market Street&lt;/br&gt;
+Suite 202&lt;/br&gt;
+Philadelphia, PA 19104&lt;/br&gt;</activiti:expression>
           </activiti:field>
         </extensionElements>
       </serviceTask>
