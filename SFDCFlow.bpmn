@@ -8,7 +8,7 @@
           <activiti:formProperty id="UserCurrent" name="How many Salesforce Accounts do you currently pay for?" type="long" required="true"></activiti:formProperty>
           <activiti:formProperty id="UserNew" name="How many new SFDC Accounts have been requested?" type="long" required="true"></activiti:formProperty>
           <activiti:formProperty id="UserLevel" name="Choose your SFDC account level? dropdown" type="enum" required="true">
-            <activiti:value id="ContactManager " name="Contact Manager "></activiti:value>
+            <activiti:value id="ContactManager" name="Contact Manager"></activiti:value>
             <activiti:value id="Group" name="Group"></activiti:value>
             <activiti:value id="Professional" name="Professional"></activiti:value>
             <activiti:value id="Enterprise" name="Enterprise"></activiti:value>
@@ -20,16 +20,19 @@
       <sequenceFlow id="flow29" sourceRef="BasicUserInfo" targetRef="InputUserSeg"></sequenceFlow>
       <serviceTask id="addInvitesScript" name="Add invites" activiti:class="plugins.wf_Add_Parties"></serviceTask>
       <scriptTask id="calculateResults" name="Calculate Resutls" scriptFormat="javascript" activiti:autoStoreVariables="true">
-        <script> // ****** set crrent user map
+        <script>// ***** reset party1_email to null;
+party1_email = null;
+ 
+// ****** set crrent user map
 userLevelCostMap=Packages.java.util.HashMap();
-userLevelCostMap.put("Contact Manager",   5.00);
+userLevelCostMap.put("ContactManager",   5.00);
 userLevelCostMap.put("Group",            25.00);
 userLevelCostMap.put("Professional",     65.00);
 userLevelCostMap.put("Enterprise",      125.00);
 userLevelCostMap.put("Performance",     300.00);
-userLevelCostMap.put("Not Sure",        125.00);
+userLevelCostMap.put("NotSure",        125.00);
 
-inputUserLevel = "Not Sure";
+inputUserLevel = "NotSure";
 if (UserLevel != "") { inputUserLevel = UserLevel}
 costPerUser = 0 + userLevelCostMap.get(inputUserLevel);
 
@@ -121,7 +124,9 @@ highProjectedYearlySaving = highPotentialMonthlySavings * (1-CostPercentagePIO* 
 
 lowPotentialSavingPercent = lowPotentialMonthlySavings / currentMonthlySpend * 100.00;
 highPotentialSavingPercent = highPotentialMonthlySavings / projectedMonthlySpend * 100.00;
-</script>
+
+showYearlySavings = " $" + lowProjectedYearlySaving.toFixed(2) + " ~ $" + highProjectedYearlySaving.toFixed(2);
+showSavingsPercentage = " " + lowPotentialSavingPercent.toFixed(2) + "% ~ " + highPotentialSavingPercent.toFixed(2) + "%";</script>
       </scriptTask>
       <userTask id="Results" name="Calculated Savings" activiti:assignee="${assignee}">
         <extensionElements>
@@ -131,14 +136,8 @@ highPotentialSavingPercent = highPotentialMonthlySavings / projectedMonthlySpend
             <activiti:value id="emailResults" name="Email Results"></activiti:value>
             <activiti:value id="learnHow" name="Learn How"></activiti:value>
           </activiti:formProperty>
-          <activiti:formProperty id="LowPMS" name="low Potential monthly Savings" type="long" expression="${lowPotentialMonthlySavings}" writable="false"></activiti:formProperty>
-          <activiti:formProperty id="HighPMS" name="high Potential monthly Savings" type="long" expression="${highPotentialMonthlySavings}" writable="false"></activiti:formProperty>
-          <activiti:formProperty id="LowPIOCost" name="low Point.io Cost" type="long" expression="${lowPIOCost}" writable="false"></activiti:formProperty>
-          <activiti:formProperty id="HighPIOCost" name="high Point.io Cost" type="long" expression="${highPIOCost}" writable="false"></activiti:formProperty>
-          <activiti:formProperty id="LowPYS" name="low YOUR PROJECTED Yearly SAVINGS are between" type="long" expression="${lowProjectedYearlySaving}" writable="false"></activiti:formProperty>
-          <activiti:formProperty id="HighPYS" name="high YOUR PROJECTED Yearly SAVINGS are between" type="long" expression="${highProjectedYearlySaving}" writable="false"></activiti:formProperty>
-          <activiti:formProperty id="lowPSP" name="low Potential Saving Percentage" type="long" expression="${lowPotentialSavingPercent}" writable="false"></activiti:formProperty>
-          <activiti:formProperty id="HighPSP" name="high Potential Saving Percentage" type="long" expression="${highPotentialSavingPercent}" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="showYearlySavings" name="YOUR PROJECTED Yearly SAVINGS are between:" type="string" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="showSavingsPercentage" name="YOUR PROJECTED SAVINGS % between:" type="string" writable="false"></activiti:formProperty>
         </extensionElements>
       </userTask>
       <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
@@ -153,7 +152,7 @@ highPotentialSavingPercent = highPotentialMonthlySavings / projectedMonthlySpend
       <serviceTask id="emailRestuls" name="email restuls" activiti:type="mail">
         <extensionElements>
           <activiti:field name="to">
-            <activiti:expression>${assignee}</activiti:expression>
+            <activiti:expression>${myEmail}</activiti:expression>
           </activiti:field>
           <activiti:field name="from">
             <activiti:string><![CDATA[alert@point.io]]></activiti:string>
@@ -178,9 +177,6 @@ highPotentialSavingPercent = highPotentialMonthlySavings / projectedMonthlySpend
 ---------------------------------------------------------------&lt;br&gt;
   |&lt;div&gt;Your reference ID on this assessment is: ${execution.getProcessInstanceId()} |&lt;/div&gt;
 ---------------------------------------------------------------</activiti:expression>
-          </activiti:field>
-          <activiti:field name="cc">
-            <activiti:expression>${myEmail}</activiti:expression>
           </activiti:field>
         </extensionElements>
       </serviceTask>
@@ -240,7 +236,7 @@ highPotentialSavingPercent = highPotentialMonthlySavings / projectedMonthlySpend
       <exclusiveGateway id="exclusivegateway4" name="Exclusive Gateway"></exclusiveGateway>
       <sequenceFlow id="flow63" sourceRef="exclusivegateway4" targetRef="calculateResults"></sequenceFlow>
       <startEvent id="startevent2" name="Start"></startEvent>
-      <sequenceFlow id="flow66" sourceRef="startevent2" targetRef="BasicUserInfo"></sequenceFlow>
+      <sequenceFlow id="flow66" sourceRef="startevent2" targetRef="exclusivegateway6"></sequenceFlow>
       <endEvent id="endevent2" name="End"></endEvent>
       <sequenceFlow id="flow67" sourceRef="LearnHow" targetRef="endevent2"></sequenceFlow>
       <sequenceFlow id="flow68" sourceRef="emailRestuls" targetRef="endevent2"></sequenceFlow>
@@ -255,12 +251,46 @@ highPotentialSavingPercent = highPotentialMonthlySavings / projectedMonthlySpend
         <script>party1_role = "Approver";
 party2_role = "Approver";
 party3_role = "Approver";
+if(party1_email == "") {party1_email = null;}
+if(party2_email == "") {party2_email = null;}
+if(party3_email == "") {party3_email = null;}
+
 addedInvitee = true;</script>
       </scriptTask>
       <sequenceFlow id="flow72" sourceRef="setInviteeRole" targetRef="addInvitesScript"></sequenceFlow>
       <sequenceFlow id="flow73" sourceRef="exclusivegateway3" targetRef="Results">
         <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'back'}]]></conditionExpression>
       </sequenceFlow>
+      <exclusiveGateway id="exclusivegateway6" name="Exclusive Gateway"></exclusiveGateway>
+      <sequenceFlow id="flow74" sourceRef="exclusivegateway6" targetRef="BasicUserInfo">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${!addedInvitee}]]></conditionExpression>
+      </sequenceFlow>
+      <scriptTask id="scripttask1" name="Invitee settings" scriptFormat="javascript" activiti:autoStoreVariables="true">
+        <script>myEmail = assignee;</script>
+      </scriptTask>
+      <serviceTask id="mailtask1" name="Invite email" activiti:type="mail">
+        <extensionElements>
+          <activiti:field name="to">
+            <activiti:expression>${myEmail}</activiti:expression>
+          </activiti:field>
+          <activiti:field name="from">
+            <activiti:string><![CDATA[alert@point.io]]></activiti:string>
+          </activiti:field>
+          <activiti:field name="subject">
+            <activiti:expression>You are invited to participate in a SFDC saving assessment. Reference ID: ${execution.getProcessInstanceId()}</activiti:expression>
+          </activiti:field>
+          <activiti:field name="html">
+            <activiti:string><![CDATA[Check the input and give your opinions, see what savings could be there.
+<br>
+Link URL]]></activiti:string>
+          </activiti:field>
+        </extensionElements>
+      </serviceTask>
+      <sequenceFlow id="flow75" sourceRef="exclusivegateway6" targetRef="scripttask1">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${addedInvitee}]]></conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="flow77" sourceRef="scripttask1" targetRef="mailtask1"></sequenceFlow>
+      <sequenceFlow id="flow78" sourceRef="mailtask1" targetRef="BasicUserInfo"></sequenceFlow>
     </subProcess>
     <sequenceFlow id="flow40" sourceRef="SFDCCalculator" targetRef="exclusivegateway5"></sequenceFlow>
     <serviceTask id="addInitialApprover" name="Add Initial Approver" activiti:class="plugins.wf_Add_Parties"></serviceTask>
@@ -271,7 +301,7 @@ addedInvitee = true;</script>
 if (null == execution.getVariable("party1_email"))
       {party1_email = "jwang@point.io";}
 addedInvitee = false;
-myEmail = 'jwang@point.io';
+myEmail = "";
 PercentDedicatedUser = 0.75;
 PercentOccasionalUser = 0.1;
 PercentInfrequentUser = 0.1;
@@ -293,194 +323,221 @@ PercentageTotal = 1.0;</script>
   <bpmndi:BPMNDiagram id="BPMNDiagram_SFDCFlow">
     <bpmndi:BPMNPlane bpmnElement="SFDCFlow" id="BPMNPlane_SFDCFlow">
       <bpmndi:BPMNShape bpmnElement="SFDCCalculator" id="BPMNShape_SFDCCalculator">
-        <omgdc:Bounds height="392.0" width="1020.0" x="40.0" y="138.0"></omgdc:Bounds>
+        <omgdc:Bounds height="392.0" width="1020.0" x="87.0" y="154.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="BasicUserInfo" id="BPMNShape_BasicUserInfo">
-        <omgdc:Bounds height="55.0" width="105.0" x="123.0" y="164.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="222.0" y="186.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="addInvitesScript" id="BPMNShape_addInvitesScript">
-        <omgdc:Bounds height="55.0" width="105.0" x="751.0" y="420.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="930.0" y="442.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="calculateResults" id="BPMNShape_calculateResults">
-        <omgdc:Bounds height="55.0" width="105.0" x="523.0" y="164.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="635.0" y="186.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="Results" id="BPMNShape_Results">
-        <omgdc:Bounds height="55.0" width="105.0" x="653.0" y="164.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="765.0" y="186.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="exclusivegateway1" id="BPMNShape_exclusivegateway1">
-        <omgdc:Bounds height="40.0" width="40.0" x="685.0" y="250.0"></omgdc:Bounds>
+        <omgdc:Bounds height="40.0" width="40.0" x="797.0" y="272.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="emailRestuls" id="BPMNShape_emailRestuls">
-        <omgdc:Bounds height="55.0" width="105.0" x="410.0" y="420.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="522.0" y="442.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="inviteMore" id="BPMNShape_inviteMore">
-        <omgdc:Bounds height="55.0" width="105.0" x="653.0" y="330.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="765.0" y="352.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="exclusivegateway2" id="BPMNShape_exclusivegateway2">
-        <omgdc:Bounds height="40.0" width="40.0" x="783.0" y="337.0"></omgdc:Bounds>
+        <omgdc:Bounds height="40.0" width="40.0" x="895.0" y="359.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="InputUserSeg" id="BPMNShape_InputUserSeg">
-        <omgdc:Bounds height="55.0" width="105.0" x="273.0" y="164.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="380.0" y="186.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="LearnHow" id="BPMNShape_LearnHow">
-        <omgdc:Bounds height="55.0" width="105.0" x="218.0" y="330.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="330.0" y="352.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="exclusivegateway3" id="BPMNShape_exclusivegateway3">
-        <omgdc:Bounds height="40.0" width="40.0" x="685.0" y="427.0"></omgdc:Bounds>
+        <omgdc:Bounds height="40.0" width="40.0" x="797.0" y="449.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="exclusivegateway4" id="BPMNShape_exclusivegateway4">
-        <omgdc:Bounds height="40.0" width="40.0" x="423.0" y="171.0"></omgdc:Bounds>
+        <omgdc:Bounds height="40.0" width="40.0" x="530.0" y="193.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="startevent2" id="BPMNShape_startevent2">
-        <omgdc:Bounds height="35.0" width="35.0" x="53.0" y="174.0"></omgdc:Bounds>
+        <omgdc:Bounds height="35.0" width="35.0" x="100.0" y="196.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="endevent2" id="BPMNShape_endevent2">
-        <omgdc:Bounds height="35.0" width="35.0" x="253.0" y="430.0"></omgdc:Bounds>
+        <omgdc:Bounds height="35.0" width="35.0" x="365.0" y="452.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="inputEmail" id="BPMNShape_inputEmail">
-        <omgdc:Bounds height="55.0" width="105.0" x="410.0" y="337.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="522.0" y="359.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="inclusivegateway1" id="BPMNShape_inclusivegateway1">
-        <omgdc:Bounds height="40.0" width="40.0" x="1117.0" y="318.0"></omgdc:Bounds>
+        <omgdc:Bounds height="40.0" width="40.0" x="1164.0" y="334.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="setInviteeRole" id="BPMNShape_setInviteeRole">
-        <omgdc:Bounds height="55.0" width="105.0" x="860.0" y="330.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="972.0" y="352.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway6" id="BPMNShape_exclusivegateway6">
+        <omgdc:Bounds height="40.0" width="40.0" x="150.0" y="193.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask1" id="BPMNShape_scripttask1">
+        <omgdc:Bounds height="55.0" width="105.0" x="118.0" y="280.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="mailtask1" id="BPMNShape_mailtask1">
+        <omgdc:Bounds height="55.0" width="105.0" x="118.0" y="413.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="addInitialApprover" id="BPMNShape_addInitialApprover">
-        <omgdc:Bounds height="55.0" width="105.0" x="494.0" y="18.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="509.0" y="36.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="InitialSettings" id="BPMNShape_InitialSettings">
-        <omgdc:Bounds height="55.0" width="105.0" x="281.0" y="18.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="296.0" y="36.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
-        <omgdc:Bounds height="35.0" width="35.0" x="87.0" y="28.0"></omgdc:Bounds>
+        <omgdc:Bounds height="35.0" width="35.0" x="131.0" y="46.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
-        <omgdc:Bounds height="35.0" width="35.0" x="1120.0" y="200.0"></omgdc:Bounds>
+        <omgdc:Bounds height="35.0" width="35.0" x="1149.0" y="212.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="exclusivegateway5" id="BPMNShape_exclusivegateway5">
-        <omgdc:Bounds height="40.0" width="40.0" x="1117.0" y="331.0"></omgdc:Bounds>
+        <omgdc:Bounds height="40.0" width="40.0" x="1146.0" y="343.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge bpmnElement="flow29" id="BPMNEdge_flow29">
-        <omgdi:waypoint x="228.0" y="191.0"></omgdi:waypoint>
-        <omgdi:waypoint x="273.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="327.0" y="213.0"></omgdi:waypoint>
+        <omgdi:waypoint x="380.0" y="213.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow32" id="BPMNEdge_flow32">
-        <omgdi:waypoint x="628.0" y="191.0"></omgdi:waypoint>
-        <omgdi:waypoint x="653.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="740.0" y="213.0"></omgdi:waypoint>
+        <omgdi:waypoint x="765.0" y="213.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow33" id="BPMNEdge_flow33">
-        <omgdi:waypoint x="705.0" y="219.0"></omgdi:waypoint>
-        <omgdi:waypoint x="705.0" y="250.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="241.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="272.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow34" id="BPMNEdge_flow34">
-        <omgdi:waypoint x="705.0" y="290.0"></omgdi:waypoint>
-        <omgdi:waypoint x="705.0" y="330.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="312.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="352.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow35" id="BPMNEdge_flow35">
-        <omgdi:waypoint x="685.0" y="270.0"></omgdi:waypoint>
-        <omgdi:waypoint x="172.0" y="268.0"></omgdi:waypoint>
-        <omgdi:waypoint x="175.0" y="219.0"></omgdi:waypoint>
+        <omgdi:waypoint x="797.0" y="292.0"></omgdi:waypoint>
+        <omgdi:waypoint x="284.0" y="290.0"></omgdi:waypoint>
+        <omgdi:waypoint x="274.0" y="241.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow43" id="BPMNEdge_flow43">
-        <omgdi:waypoint x="705.0" y="290.0"></omgdi:waypoint>
-        <omgdi:waypoint x="462.0" y="337.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="312.0"></omgdi:waypoint>
+        <omgdi:waypoint x="574.0" y="359.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow44" id="BPMNEdge_flow44">
-        <omgdi:waypoint x="758.0" y="357.0"></omgdi:waypoint>
-        <omgdi:waypoint x="783.0" y="357.0"></omgdi:waypoint>
+        <omgdi:waypoint x="870.0" y="379.0"></omgdi:waypoint>
+        <omgdi:waypoint x="895.0" y="379.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow46" id="BPMNEdge_flow46">
-        <omgdi:waypoint x="823.0" y="357.0"></omgdi:waypoint>
-        <omgdi:waypoint x="860.0" y="357.0"></omgdi:waypoint>
+        <omgdi:waypoint x="935.0" y="379.0"></omgdi:waypoint>
+        <omgdi:waypoint x="972.0" y="379.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow47" id="BPMNEdge_flow47">
-        <omgdi:waypoint x="751.0" y="447.0"></omgdi:waypoint>
-        <omgdi:waypoint x="725.0" y="447.0"></omgdi:waypoint>
+        <omgdi:waypoint x="930.0" y="469.0"></omgdi:waypoint>
+        <omgdi:waypoint x="837.0" y="469.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow56" id="BPMNEdge_flow56">
-        <omgdi:waypoint x="378.0" y="191.0"></omgdi:waypoint>
-        <omgdi:waypoint x="423.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="485.0" y="213.0"></omgdi:waypoint>
+        <omgdi:waypoint x="530.0" y="213.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow57" id="BPMNEdge_flow57">
-        <omgdi:waypoint x="803.0" y="337.0"></omgdi:waypoint>
-        <omgdi:waypoint x="802.0" y="192.0"></omgdi:waypoint>
-        <omgdi:waypoint x="758.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="915.0" y="359.0"></omgdi:waypoint>
+        <omgdi:waypoint x="914.0" y="214.0"></omgdi:waypoint>
+        <omgdi:waypoint x="870.0" y="213.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow59" id="BPMNEdge_flow59">
-        <omgdi:waypoint x="705.0" y="290.0"></omgdi:waypoint>
-        <omgdi:waypoint x="270.0" y="330.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="312.0"></omgdi:waypoint>
+        <omgdi:waypoint x="382.0" y="352.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow60" id="BPMNEdge_flow60">
-        <omgdi:waypoint x="705.0" y="427.0"></omgdi:waypoint>
-        <omgdi:waypoint x="705.0" y="385.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="449.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="407.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow61" id="BPMNEdge_flow61">
-        <omgdi:waypoint x="705.0" y="427.0"></omgdi:waypoint>
-        <omgdi:waypoint x="462.0" y="392.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="449.0"></omgdi:waypoint>
+        <omgdi:waypoint x="574.0" y="414.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow62" id="BPMNEdge_flow62">
-        <omgdi:waypoint x="443.0" y="211.0"></omgdi:waypoint>
-        <omgdi:waypoint x="440.0" y="252.0"></omgdi:waypoint>
-        <omgdi:waypoint x="324.0" y="252.0"></omgdi:waypoint>
-        <omgdi:waypoint x="325.0" y="219.0"></omgdi:waypoint>
+        <omgdi:waypoint x="550.0" y="233.0"></omgdi:waypoint>
+        <omgdi:waypoint x="552.0" y="274.0"></omgdi:waypoint>
+        <omgdi:waypoint x="436.0" y="274.0"></omgdi:waypoint>
+        <omgdi:waypoint x="432.0" y="241.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow63" id="BPMNEdge_flow63">
-        <omgdi:waypoint x="463.0" y="191.0"></omgdi:waypoint>
-        <omgdi:waypoint x="523.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="570.0" y="213.0"></omgdi:waypoint>
+        <omgdi:waypoint x="635.0" y="213.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow66" id="BPMNEdge_flow66">
-        <omgdi:waypoint x="88.0" y="191.0"></omgdi:waypoint>
-        <omgdi:waypoint x="123.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="135.0" y="213.0"></omgdi:waypoint>
+        <omgdi:waypoint x="150.0" y="213.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow67" id="BPMNEdge_flow67">
-        <omgdi:waypoint x="270.0" y="385.0"></omgdi:waypoint>
-        <omgdi:waypoint x="270.0" y="430.0"></omgdi:waypoint>
+        <omgdi:waypoint x="382.0" y="407.0"></omgdi:waypoint>
+        <omgdi:waypoint x="382.0" y="452.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow68" id="BPMNEdge_flow68">
-        <omgdi:waypoint x="410.0" y="447.0"></omgdi:waypoint>
-        <omgdi:waypoint x="288.0" y="447.0"></omgdi:waypoint>
+        <omgdi:waypoint x="522.0" y="469.0"></omgdi:waypoint>
+        <omgdi:waypoint x="400.0" y="469.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow71" id="BPMNEdge_flow71">
-        <omgdi:waypoint x="462.0" y="392.0"></omgdi:waypoint>
-        <omgdi:waypoint x="462.0" y="420.0"></omgdi:waypoint>
+        <omgdi:waypoint x="574.0" y="414.0"></omgdi:waypoint>
+        <omgdi:waypoint x="574.0" y="442.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow72" id="BPMNEdge_flow72">
-        <omgdi:waypoint x="912.0" y="385.0"></omgdi:waypoint>
-        <omgdi:waypoint x="803.0" y="420.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1024.0" y="407.0"></omgdi:waypoint>
+        <omgdi:waypoint x="982.0" y="442.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow73" id="BPMNEdge_flow73">
-        <omgdi:waypoint x="705.0" y="467.0"></omgdi:waypoint>
-        <omgdi:waypoint x="704.0" y="496.0"></omgdi:waypoint>
-        <omgdi:waypoint x="1012.0" y="496.0"></omgdi:waypoint>
-        <omgdi:waypoint x="1012.0" y="192.0"></omgdi:waypoint>
-        <omgdi:waypoint x="758.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="489.0"></omgdi:waypoint>
+        <omgdi:waypoint x="816.0" y="518.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1081.0" y="517.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1080.0" y="369.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1080.0" y="212.0"></omgdi:waypoint>
+        <omgdi:waypoint x="870.0" y="213.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow74" id="BPMNEdge_flow74">
+        <omgdi:waypoint x="190.0" y="213.0"></omgdi:waypoint>
+        <omgdi:waypoint x="222.0" y="213.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow75" id="BPMNEdge_flow75">
+        <omgdi:waypoint x="170.0" y="233.0"></omgdi:waypoint>
+        <omgdi:waypoint x="170.0" y="280.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow77" id="BPMNEdge_flow77">
+        <omgdi:waypoint x="170.0" y="335.0"></omgdi:waypoint>
+        <omgdi:waypoint x="170.0" y="413.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow78" id="BPMNEdge_flow78">
+        <omgdi:waypoint x="223.0" y="440.0"></omgdi:waypoint>
+        <omgdi:waypoint x="272.0" y="436.0"></omgdi:waypoint>
+        <omgdi:waypoint x="274.0" y="241.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow40" id="BPMNEdge_flow40">
-        <omgdi:waypoint x="1060.0" y="334.0"></omgdi:waypoint>
-        <omgdi:waypoint x="1117.0" y="351.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1107.0" y="350.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1146.0" y="363.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow54" id="BPMNEdge_flow54">
-        <omgdi:waypoint x="546.0" y="73.0"></omgdi:waypoint>
-        <omgdi:waypoint x="550.0" y="138.0"></omgdi:waypoint>
+        <omgdi:waypoint x="561.0" y="91.0"></omgdi:waypoint>
+        <omgdi:waypoint x="597.0" y="154.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow55" id="BPMNEdge_flow55">
-        <omgdi:waypoint x="386.0" y="45.0"></omgdi:waypoint>
-        <omgdi:waypoint x="494.0" y="45.0"></omgdi:waypoint>
+        <omgdi:waypoint x="401.0" y="63.0"></omgdi:waypoint>
+        <omgdi:waypoint x="509.0" y="63.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow65" id="BPMNEdge_flow65">
-        <omgdi:waypoint x="122.0" y="45.0"></omgdi:waypoint>
-        <omgdi:waypoint x="281.0" y="45.0"></omgdi:waypoint>
+        <omgdi:waypoint x="166.0" y="63.0"></omgdi:waypoint>
+        <omgdi:waypoint x="296.0" y="63.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow64" id="BPMNEdge_flow64">
-        <omgdi:waypoint x="1137.0" y="331.0"></omgdi:waypoint>
-        <omgdi:waypoint x="1137.0" y="235.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1166.0" y="343.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1166.0" y="247.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow42" id="BPMNEdge_flow42">
-        <omgdi:waypoint x="1137.0" y="371.0"></omgdi:waypoint>
-        <omgdi:waypoint x="1133.0" y="568.0"></omgdi:waypoint>
-        <omgdi:waypoint x="504.0" y="568.0"></omgdi:waypoint>
-        <omgdi:waypoint x="550.0" y="530.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1166.0" y="383.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1162.0" y="580.0"></omgdi:waypoint>
+        <omgdi:waypoint x="533.0" y="580.0"></omgdi:waypoint>
+        <omgdi:waypoint x="597.0" y="546.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
