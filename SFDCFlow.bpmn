@@ -17,126 +17,95 @@
           </activiti:formProperty>
         </extensionElements>
       </userTask>
-      <sequenceFlow id="flow29" sourceRef="BasicUserInfo" targetRef="InputUserSeg"></sequenceFlow>
+      <sequenceFlow id="flow29" sourceRef="BasicUserInfo" targetRef="scripttask2"></sequenceFlow>
       <serviceTask id="addInvitesScript" name="Add Invitees" activiti:class="plugins.wf_Add_Parties"></serviceTask>
-      <scriptTask id="calculateResults" name="Calculate Resutls" scriptFormat="javascript" activiti:autoStoreVariables="true">
-        <script>// ***** reset party1_email to null;
+      <scriptTask id="calculateResults" name="Calculate Results" scriptFormat="javascript" activiti:autoStoreVariables="true">
+        <script>//*********************************************************************
+//*******         Calculate Results                                ****
+//*********************************************************************
+
+// ***** reset party1_email to null;
 party1_email = null;
- addedInvitee = false;
+addedInvitee = false;
 
-// ****** set crrent user map
-userLevelCostMap=Packages.java.util.HashMap();
-userLevelCostMap.put("ContactManager",   5.00);
-userLevelCostMap.put("Group",            25.00);
-userLevelCostMap.put("Professional",     65.00);
-userLevelCostMap.put("Enterprise",      125.00);
-userLevelCostMap.put("Performance",     300.00);
-userLevelCostMap.put("NotSure",        125.00);
+//*********** get segment input: (PercentDedicatedUser, PercentOccasionalUser, PercentInfrequentUser, Percent3rdPartyUser)
 
-inputUserLevel = "NotSure";
-if (UserLevel != "") { inputUserLevel = UserLevel}
-costPerUser = 0 + userLevelCostMap.get(inputUserLevel);
-
-userProjected         =   UserCurrent * 1   +  UserNew * 1;
-currentMonthlySpend   =   UserCurrent    *  costPerUser;
-projectedMonthlySpend =   userProjected * costPerUser;
+UserMap.get(assignee).put("PercentDedicatedUser", PercentDedicatedUser);
+UserMap.get(assignee).put("PercentOccasionalUser", PercentOccasionalUser);
+UserMap.get(assignee).put("PercentInfrequentUser", PercentInfrequentUser);
+UserMap.get(assignee).put("Percent3rdPartyUser", Percent3rdPartyUser);
+UserMap.get(assignee).put("PercentTotal", PercentDedicatedUser*1+PercentOccasionalUser*1+PercentInfrequentUser*1+Percent3rdPartyUser*1);
 
  // ****** set crrent user map
-currentUserMap=Packages.java.util.HashMap();
-currentUserMap.put("dedicated",   UserCurrent * PercentDedicatedUser);
-currentUserMap.put("occasional",  UserCurrent * PercentOccasionalUser);
-currentUserMap.put("infrequent",  UserCurrent * PercentInfrequentUser);
-currentUserMap.put("thirdParty",  UserCurrent * Percent3rdPartyUser);
+
+UserMap.get(assignee).put("currentUser_dedicated", UserMap.get(assignee).get("UserCurrent")*UserMap.get(assignee).get("PercentDedicatedUser"));
+UserMap.get(assignee).put("currentUser_occasional", UserMap.get(assignee).get("UserCurrent")*UserMap.get(assignee).get("PercentOccasionalUser"));
+UserMap.get(assignee).put("currentUser_infrequent", UserMap.get(assignee).get("UserCurrent")*UserMap.get(assignee).get("PercentInfrequentUser"));
+UserMap.get(assignee).put("currentUser_thirdParty", UserMap.get(assignee).get("UserCurrent")*UserMap.get(assignee).get("Percent3rdPartyUser"));
 
  // ****** set projected user map
-projectedUserMap=Packages.java.util.HashMap();
-projectedUserMap.put("dedicated",   userProjected * PercentDedicatedUser);
-projectedUserMap.put("occasional",  userProjected * PercentOccasionalUser);
-projectedUserMap.put("infrequent",  userProjected * PercentInfrequentUser);
-projectedUserMap.put("thirdParty",  userProjected * Percent3rdPartyUser);
-
- // ****** set min save Assumption map
-minSaveAssumptionMap=Packages.java.util.HashMap();
-minSaveAssumptionMap.put("dedicated",   "1");
-minSaveAssumptionMap.put("occasional",  "0.75");
-minSaveAssumptionMap.put("infrequent",  "0.5");
-minSaveAssumptionMap.put("thirdParty",  "0.25");
-
- // ****** set min current user map
-minUserCurrentPIOMap=Packages.java.util.HashMap();
-minUserCurrentPIOMap.put("dedicated",   currentUserMap.get("dedicated")  * minSaveAssumptionMap.get("dedicated"));
-minUserCurrentPIOMap.put("occasional",  currentUserMap.get("occasional") * minSaveAssumptionMap.get("occasional"));
-minUserCurrentPIOMap.put("infrequent",  currentUserMap.get("infrequent") * minSaveAssumptionMap.get("infrequent"));
-minUserCurrentPIOMap.put("thirdParty",  currentUserMap.get("thirdParty") * minSaveAssumptionMap.get("thirdParty"));
-
-lowEndWithPIOCurrentUser = minUserCurrentPIOMap.get("dedicated") * 1
-						+  minUserCurrentPIOMap.get("occasional") * 1
-						+  minUserCurrentPIOMap.get("infrequent") * 1
-						+  minUserCurrentPIOMap.get("thirdParty") * 1;
-
-lowEndWithPIOCurrentCost = lowEndWithPIOCurrentUser * costPerUser;
-
- // ****** set min projected user map
-minUserProjectedPIOMap=Packages.java.util.HashMap();
-minUserProjectedPIOMap.put("dedicated",   projectedUserMap.get("dedicated")  * minSaveAssumptionMap.get("dedicated"));
-minUserProjectedPIOMap.put("occasional",  projectedUserMap.get("occasional") * minSaveAssumptionMap.get("occasional"));
-minUserProjectedPIOMap.put("infrequent",  projectedUserMap.get("infrequent") * minSaveAssumptionMap.get("infrequent"));
-minUserProjectedPIOMap.put("thirdParty",  projectedUserMap.get("thirdParty") * minSaveAssumptionMap.get("thirdParty"));
-
-lowEndWithPIOProjectedUser = minUserProjectedPIOMap.get("dedicated") * 1
-						+  minUserProjectedPIOMap.get("occasional") * 1
-						+  minUserProjectedPIOMap.get("infrequent") * 1
-						+  minUserProjectedPIOMap.get("thirdParty")* 1;
-
-lowEndWithPIOProjectedCost = lowEndWithPIOProjectedUser * costPerUser;
+UserMap.get(assignee).put("projectedUser_dedicated",  UserMap.get(assignee).get("projectedUser")*UserMap.get(assignee).get("PercentDedicatedUser"));
+UserMap.get(assignee).put("projectedUser_occasional", UserMap.get(assignee).get("projectedUser")*UserMap.get(assignee).get("PercentOccasionalUser"));
+UserMap.get(assignee).put("projectedUser_infrequent", UserMap.get(assignee).get("projectedUser")*UserMap.get(assignee).get("PercentInfrequentUser"));
+UserMap.get(assignee).put("projectedUser_thirdParty", UserMap.get(assignee).get("projectedUser")*UserMap.get(assignee).get("Percent3rdPartyUser"));
 
 
- // ****** set max save Assumption map
-maxSaveAssumptionMap=Packages.java.util.HashMap();
-maxSaveAssumptionMap.put("dedicated",   "0.75");
-maxSaveAssumptionMap.put("occasional",  "0.5");
-maxSaveAssumptionMap.put("infrequent",  "0.0");
-maxSaveAssumptionMap.put("thirdParty",  "0.0");
+ // ****** set min current user map  new
+UserMap.get(assignee).put("minUserCurrentPIO_dedicated",  UserMap.get(assignee).get("currentUser_dedicated")*minSaveAssumptionMap.get("dedicated"));
+UserMap.get(assignee).put("minUserCurrentPIO_occasional", UserMap.get(assignee).get("currentUser_occasional")*minSaveAssumptionMap.get("occasional"));
+UserMap.get(assignee).put("minUserCurrentPIO_infrequent", UserMap.get(assignee).get("currentUser_infrequent")*minSaveAssumptionMap.get("infrequent"));
+UserMap.get(assignee).put("minUserCurrentPIO_thirdParty", UserMap.get(assignee).get("currentUser_thirdParty")*minSaveAssumptionMap.get("thirdParty"));
 
- // ****** set max projected user map
-maxUserProjectedPIOMap=Packages.java.util.HashMap();
-maxUserProjectedPIOMap.put("dedicated",   projectedUserMap.get("dedicated")  * maxSaveAssumptionMap.get("dedicated"));
-maxUserProjectedPIOMap.put("occasional",  projectedUserMap.get("occasional") * maxSaveAssumptionMap.get("occasional"));
-maxUserProjectedPIOMap.put("infrequent",  projectedUserMap.get("infrequent") * maxSaveAssumptionMap.get("infrequent"));
-maxUserProjectedPIOMap.put("thirdParty",  projectedUserMap.get("thirdParty") * maxSaveAssumptionMap.get("thirdParty"));
+UserMap.get(assignee).put("lowEndWithPIOCurrentUser", (UserMap.get(assignee).get("minUserCurrentPIO_dedicated")*1+UserMap.get(assignee).get("minUserCurrentPIO_occasional")*1+UserMap.get(assignee).get("minUserCurrentPIO_infrequent")*1+UserMap.get(assignee).get("minUserCurrentPIO_thirdParty")*1));
+UserMap.get(assignee).put("lowEndWithPIOCurrentCost", UserMap.get(assignee).get("lowEndWithPIOCurrentUser")*UserMap.get(assignee).get("costPerUser"));
 
-highEndWithPIOProjectedUser = maxUserProjectedPIOMap.get("dedicated")* 1 
-						+  maxUserProjectedPIOMap.get("occasional") * 1
-						+  maxUserProjectedPIOMap.get("infrequent") * 1
-						+  maxUserProjectedPIOMap.get("thirdParty")* 1;
 
-highEndWithPIOProjectedCost = highEndWithPIOProjectedUser * costPerUser;
+ // ****** set min projected user map new
 
- // ***** for display in Task 3
+UserMap.get(assignee).put("minUserProjectedPIO_dedicated",  UserMap.get(assignee).get("projectedUser_dedicated")*minSaveAssumptionMap.get("dedicated"));
+UserMap.get(assignee).put("minUserProjectedPIO_occasional", UserMap.get(assignee).get("projectedUser_occasional")*minSaveAssumptionMap.get("occasional"));
+UserMap.get(assignee).put("minUserProjectedPIO_infrequent", UserMap.get(assignee).get("projectedUser_infrequent")*minSaveAssumptionMap.get("infrequent"));
+UserMap.get(assignee).put("minUserProjectedPIO_thirdParty", UserMap.get(assignee).get("projectedUser_thirdParty")*minSaveAssumptionMap.get("thirdParty"));
+
+UserMap.get(assignee).put("lowEndWithPIOProjectedUser", (UserMap.get(assignee).get("minUserProjectedPIO_dedicated")*1+UserMap.get(assignee).get("minUserProjectedPIO_occasional")*1+UserMap.get(assignee).get("minUserProjectedPIO_infrequent")*1+UserMap.get(assignee).get("minUserProjectedPIO_thirdParty")*1));
+UserMap.get(assignee).put("lowEndWithPIOProjectedCost", UserMap.get(assignee).get("lowEndWithPIOProjectedUser")*UserMap.get(assignee).get("costPerUser"));
+
+
+ // ****** set max projected user map new
+
+UserMap.get(assignee).put("maxUserProjectedPIO_dedicated",  UserMap.get(assignee).get("projectedUser_dedicated")*maxSaveAssumptionMap.get("dedicated"));
+UserMap.get(assignee).put("maxUserProjectedPIO_occasional", UserMap.get(assignee).get("projectedUser_occasional")*maxSaveAssumptionMap.get("occasional"));
+UserMap.get(assignee).put("maxUserProjectedPIO_infrequent", UserMap.get(assignee).get("projectedUser_infrequent")*maxSaveAssumptionMap.get("infrequent"));
+UserMap.get(assignee).put("maxUserProjectedPIO_thirdParty", UserMap.get(assignee).get("projectedUser_thirdParty")*maxSaveAssumptionMap.get("thirdParty"));
+
+UserMap.get(assignee).put("highEndWithPIOProjectedUser", (UserMap.get(assignee).get("maxUserProjectedPIO_dedicated")*1+UserMap.get(assignee).get("maxUserProjectedPIO_occasional")*1+UserMap.get(assignee).get("maxUserProjectedPIO_infrequent")*1+UserMap.get(assignee).get("maxUserProjectedPIO_thirdParty")*1));
+UserMap.get(assignee).put("highEndWithPIOProjectedCost", UserMap.get(assignee).get("highEndWithPIOProjectedUser")*UserMap.get(assignee).get("costPerUser"));
+
+ // ***** for display in Task 3 new
  CostPercentagePIO = 0.5;
 
-lowPotentialMonthlySavings   = currentMonthlySpend - lowEndWithPIOCurrentCost;
-highPotentialMonthlySavings = lowEndWithPIOProjectedCost * 1 - highEndWithPIOProjectedCost * 1;
-lowPIOCost   = lowPotentialMonthlySavings   * CostPercentagePIO;
-highPIOCost = highPotentialMonthlySavings * CostPercentagePIO;
+UserMap.get(assignee).put("lowPotentialMonthlySavings",  (UserMap.get(assignee).get("currentMonthlySpend")*1-UserMap.get(assignee).get("lowEndWithPIOCurrentCost")*1));
+UserMap.get(assignee).put("highPotentialMonthlySavings",  (UserMap.get(assignee).get("lowEndWithPIOProjectedCost")*1-UserMap.get(assignee).get("highEndWithPIOProjectedCost")*1));
+UserMap.get(assignee).put("lowPIOCost",  (UserMap.get(assignee).get("lowPotentialMonthlySavings")*1-CostPercentagePIO*1));
+UserMap.get(assignee).put("highPIOCost", (UserMap.get(assignee).get("highPotentialMonthlySavings")*1-CostPercentagePIO*1));
 
-lowProjectedYearlySaving  = lowPotentialMonthlySavings  * (1-CostPercentagePIO* 1) * 12;
-highProjectedYearlySaving = highPotentialMonthlySavings * (1-CostPercentagePIO* 1) * 12;
+UserMap.get(assignee).put("lowProjectedYearlySaving",  (UserMap.get(assignee).get("lowPotentialMonthlySavings")*(1-CostPercentagePIO*1)*12));
+UserMap.get(assignee).put("highProjectedYearlySaving", (UserMap.get(assignee).get("highPotentialMonthlySavings")*(1-CostPercentagePIO*1)*12));
 
-lowPotentialSavingPercent = lowPotentialMonthlySavings / currentMonthlySpend * 100.00;
-highPotentialSavingPercent = highPotentialMonthlySavings / projectedMonthlySpend * 100.00;
+UserMap.get(assignee).put("lowPotentialSavingPercent",  (UserMap.get(assignee).get("lowPotentialMonthlySavings")/UserMap.get(assignee).get("currentMonthlySpend")*100));
+UserMap.get(assignee).put("highPotentialSavingPercent", (UserMap.get(assignee).get("highPotentialMonthlySavings")/UserMap.get(assignee).get("projectedMonthlySpend")*100));
 
-showYearlySavings = " $" + lowProjectedYearlySaving.toFixed(2) + " ~ $" + highProjectedYearlySaving.toFixed(2);
-showSavingsPercentage = " " + lowPotentialSavingPercent.toFixed(2) + "% ~ " + highPotentialSavingPercent.toFixed(2) + "%";
+UserMap.get(assignee).put("showYearlySavings",     ("$"+(UserMap.get(assignee).get("lowProjectedYearlySaving")*1.00).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")+" ~ $"+(UserMap.get(assignee).get("highProjectedYearlySaving")*1.00).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")));
+UserMap.get(assignee).put("showSavingsPercentage", (" " + (UserMap.get(assignee).get("lowPotentialSavingPercent")*1.00).toFixed(2) + "% ~ "+(UserMap.get(assignee).get("highPotentialSavingPercent")*1.00).toFixed(2) + "%"));
 
 //***** set for display
-displayPercentDedicatedUser = PercentDedicatedUser * 100;
-displayPercentOccasionalUser = PercentOccasionalUser * 100;
-displayPercentInfrequentUser = PercentInfrequentUser * 100;
-displayPercent3rdPartyUser = Percent3rdPartyUser * 100;
-displaylowPotentialSavingPercent = lowPotentialSavingPercent * 100;
-displayhighPotentialSavingPercent = highPotentialSavingPercent * 100;
-displayhighProjectedYearlySaving = "$" + highProjectedYearlySaving.toFixed(2);
+UserMap.get(assignee).put("displayPercentDedicatedUser",  (UserMap.get(assignee).get("PercentDedicatedUser")*100).toFixed(2));
+UserMap.get(assignee).put("displayPercentOccasionalUser", (UserMap.get(assignee).get("PercentOccasionalUser")*100).toFixed(2));
+UserMap.get(assignee).put("displayPercentInfrequentUser", (UserMap.get(assignee).get("PercentInfrequentUser")*100).toFixed(2));
+UserMap.get(assignee).put("displayPercent3rdPartyUser",   (UserMap.get(assignee).get("Percent3rdPartyUser")*100).toFixed(2));
+UserMap.get(assignee).put("displaylowPotentialSavingPercent",   (UserMap.get(assignee).get("lowPotentialSavingPercent")*100).toFixed(2));
+UserMap.get(assignee).put("displayhighPotentialSavingPercent",("$" + (UserMap.get(assignee).get("highPotentialSavingPercent")*100).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")));
+UserMap.get(assignee).put("displayhighProjectedYearlySaving", ("$" + (UserMap.get(assignee).get("highProjectedYearlySaving")*1.00).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")));
 </script>
       </scriptTask>
       <userTask id="Results" name="Your Savings" activiti:assignee="${assignee}">
@@ -147,19 +116,10 @@ displayhighProjectedYearlySaving = "$" + highProjectedYearlySaving.toFixed(2);
             <activiti:value id="return" name="Redo"></activiti:value>
             <activiti:value id="learnHow" name="Finish"></activiti:value>
           </activiti:formProperty>
-          <activiti:formProperty id="showYearlySavings" name="Your Estimated Yearly SAVINGS are: " type="string" writable="false"></activiti:formProperty>
-          <activiti:formProperty id="showSavingsPercentage" name="which is between:" type="string" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="showYearlySavings" name="Your Estimated Yearly SAVINGS are: " type="string" expression="${UserMap.get(assignee).get(&quot;showYearlySavings&quot;)}" writable="false"></activiti:formProperty>
+          <activiti:formProperty id="showSavingsPercentage" name="which is between:" type="string" expression="${UserMap.get(assignee).get(&quot;showSavingsPercentage&quot;)}" writable="false"></activiti:formProperty>
         </extensionElements>
       </userTask>
-      <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
-      <sequenceFlow id="flow32" sourceRef="calculateResults" targetRef="Results"></sequenceFlow>
-      <sequenceFlow id="flow33" sourceRef="Results" targetRef="exclusivegateway1"></sequenceFlow>
-      <sequenceFlow id="flow34" sourceRef="exclusivegateway1" targetRef="inviteMore">
-        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'inviteOthers'}]]></conditionExpression>
-      </sequenceFlow>
-      <sequenceFlow id="flow35" sourceRef="exclusivegateway1" targetRef="BasicUserInfo">
-        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'return'}]]></conditionExpression>
-      </sequenceFlow>
       <serviceTask id="emailRestuls" name="Send Results" activiti:type="mail">
         <extensionElements>
           <activiti:field name="to">
@@ -174,25 +134,25 @@ displayhighProjectedYearlySaving = "$" + highProjectedYearlySaving.toFixed(2);
           <activiti:field name="html">
             <activiti:expression>&lt;div&gt;&lt;h3&gt;Thanks for trying the Salesforce Explorer Saving estimator!&lt;/h3&gt;&lt;/div&gt;
 &lt;div&gt;&lt;h4&gt;Here's the potential savings we calculated for you.&lt;/h4&gt;&lt;/div&gt;
-&lt;div&gt;&lt;h4&gt;Please &lt;a href="http://point.io/quick-contact"&gt;contact us&lt;/a&gt; if you're interested in saving ${displayhighProjectedYearlySaving} or more each year on your Salesforce.com bill.&lt;/h4&gt;&lt;/div&gt;
+&lt;div&gt;&lt;h4&gt;Please &lt;a href="http://point.io/quick-contact"&gt;contact us&lt;/a&gt; if you're interested in saving ${UserMap.get(assignee).get("displayhighProjectedYearlySaving")} or more each year on your Salesforce.com bill.&lt;/h4&gt;&lt;/div&gt;
 
 &lt;br&gt;
 &lt;strong&gt;Your responses:&lt;/strong&gt;
 &lt;table&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;How many Salesforce.com Accounts do you currently pay for?&lt;/td&gt;&lt;td&gt; ${UserCurrent} &lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;How many new Salesforce.com Accounts have been requested?&lt;/td&gt;&lt;td&gt; ${UserNew} &lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;Your typical Salesforce.com account level?&lt;/td&gt;&lt;td&gt; ${UserLevel} (${costPerUser} per user/per mo)&lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;% of Dedicated Users:&lt;/td&gt;&lt;td&gt; ${displayPercentDedicatedUser} %&lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;% of Occasional Users:&lt;/td&gt;&lt;td&gt; ${displayPercentOccasionalUser} %&lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;% of Infrequent Users:&lt;/td&gt;&lt;td&gt; ${displayPercentInfrequentUser} %&lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;% of 3rd Party Users:&lt;/td&gt;&lt;td&gt; ${displayPercent3rdPartyUser} %&lt;/td&gt;&lt;/tr&gt;		
+	&lt;tr align='right'&gt;&lt;td&gt;How many Salesforce.com Accounts do you currently pay for?&lt;/td&gt;&lt;td&gt; ${UserMap.get(assignee).get("UserCurrent")} &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;How many new Salesforce.com Accounts have been requested?&lt;/td&gt;&lt;td&gt; ${UserMap.get(assignee).get("UserNew")} &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Your typical Salesforce.com account level?&lt;/td&gt;&lt;td&gt; ${UserMap.get(assignee).get("UserLevel")} (${UserMap.get(assignee).get("costPerUser")} per user/per mo)&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of Dedicated Users:&lt;/td&gt;&lt;td&gt; ${UserMap.get(assignee).get("displayPercentDedicatedUser")} %&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of Occasional Users:&lt;/td&gt;&lt;td&gt; ${UserMap.get(assignee).get("displayPercentOccasionalUser")} %&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of Infrequent Users:&lt;/td&gt;&lt;td&gt; ${UserMap.get(assignee).get("displayPercentInfrequentUser")} %&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of 3rd Party Users:&lt;/td&gt;&lt;td&gt; ${UserMap.get(assignee).get("displayPercent3rdPartyUser")} %&lt;/td&gt;&lt;/tr&gt;		
 &lt;/table&gt;display
 &lt;/br&gt;
 &lt;strong&gt;Detailed estimates:&lt;/strong&gt;
 &lt;table&gt;
 	&lt;tr align='center'&gt;&lt;td&gt;&amp;nbsp;&lt;/td&gt;&lt;td&gt;from&lt;/td&gt;&lt;td&gt; to &lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;Your estimated Yearly SAVINGS is between:&lt;/td&gt;&lt;td style="border: 1px solid black;"&gt; ${showYearlySavings}&lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;Saving % from your current cost:&lt;/td&gt;&lt;td style="border: 1px solid black;"&gt; ${showSavingsPercentage}&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Your estimated Yearly SAVINGS is between:&lt;/td&gt;&lt;td style="border: 1px solid black;"&gt;${UserMap.get(assignee).get("showYearlySavings")}&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Saving % from your current cost:&lt;/td&gt;&lt;td style="border: 1px solid black;"&gt;${UserMap.get(assignee).get("showSavingsPercentage")}&lt;/td&gt;&lt;/tr&gt;
 &lt;/table&gt;
 &lt;/br&gt;
 &lt;div&gt;Your reference ID on this assessment is: ${execution.getProcessInstanceId()}.&lt;/div&gt;
@@ -221,9 +181,6 @@ Philadelphia, PA 19104&lt;/br&gt;</activiti:expression>
           </activiti:field>
         </extensionElements>
       </serviceTask>
-      <sequenceFlow id="flow43" sourceRef="exclusivegateway1" targetRef="inputEmail">
-        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'emailResults'}]]></conditionExpression>
-      </sequenceFlow>
       <userTask id="inviteMore" name="Improve Accuracy" activiti:assignee="${assignee}">
         <extensionElements>
           <activiti:formProperty id="wf_optionsOutcome" name="Options" type="enum" required="true">
@@ -256,9 +213,6 @@ Philadelphia, PA 19104&lt;/br&gt;</activiti:expression>
       <sequenceFlow id="flow57" sourceRef="exclusivegateway2" targetRef="Results">
         <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'back'}]]></conditionExpression>
       </sequenceFlow>
-      <sequenceFlow id="flow59" sourceRef="exclusivegateway1" targetRef="endevent2">
-        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'learnHow'}]]></conditionExpression>
-      </sequenceFlow>
       <exclusiveGateway id="exclusivegateway3" name="Exclusive Gateway"></exclusiveGateway>
       <sequenceFlow id="flow60" sourceRef="exclusivegateway3" targetRef="inviteMore">
         <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'inviteMore'}]]></conditionExpression>
@@ -274,7 +228,7 @@ Philadelphia, PA 19104&lt;/br&gt;</activiti:expression>
       <startEvent id="startevent2" name="Start"></startEvent>
       <sequenceFlow id="flow66" sourceRef="startevent2" targetRef="exclusivegateway6"></sequenceFlow>
       <endEvent id="endevent2" name="End"></endEvent>
-      <sequenceFlow id="flow68" sourceRef="emailRestuls" targetRef="Results"></sequenceFlow>
+      <sequenceFlow id="flow68" sourceRef="scripttask3" targetRef="endevent2"></sequenceFlow>
       <userTask id="inputEmail" name="Forward Results" activiti:assignee="${assignee}">
         <extensionElements>
           <activiti:formProperty id="myEmail" name="Send to this email" type="string" required="true"></activiti:formProperty>
@@ -301,7 +255,8 @@ addedInvitee = true;</script>
         <conditionExpression xsi:type="tFormalExpression"><![CDATA[${!addedInvitee}]]></conditionExpression>
       </sequenceFlow>
       <scriptTask id="scripttask1" name="Invitee settings" scriptFormat="javascript" activiti:autoStoreVariables="true">
-        <script>myEmail = assignee;</script>
+        <script>myEmail = assignee;
+</script>
       </scriptTask>
       <serviceTask id="mailtask1" name="Send Invite" activiti:type="mail">
         <extensionElements>
@@ -318,26 +273,26 @@ addedInvitee = true;</script>
             <activiti:expression>&lt;div&gt;&lt;h3&gt;Your colleague thought you could add important detail to an estimate for saving on your yearly Salesforce.com licenses.&lt;/h3&gt;&lt;/div&gt;&lt;br&gt;
 http://api.point.io/wizard/index.cfm?procid=${execution.getProcessInstanceId()}&lt;br&gt;
 &lt;br&gt;
-&lt;div&gt;&lt;h4&gt;Based on the initial response, there is a potential savings of ${displayhighProjectedYearlySaving}.&lt;/h4&gt;&lt;/div&gt;
+&lt;div&gt;&lt;h4&gt;Based on the initial response, there is a potential savings of ${UserMap.get("AVG").get("displayhighProjectedYearlySaving")}.&lt;/h4&gt;&lt;/div&gt;
 &lt;div&gt;&lt;h4&gt;Please follow this link &lt;a href="http://point.io/quick-contact"&gt;to refine the calculations&lt;/a&gt; and improve the accuracy of the result.&lt;/h4&gt;&lt;/div&gt;
 
 &lt;br&gt;
 &lt;strong&gt;Your colleague's responses:&lt;/strong&gt;
 &lt;table&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;How many Salesforce.com Accounts do you currently pay for?&lt;/td&gt;&lt;td&gt; ${UserCurrent} &lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;How many new Salesforce.com Accounts have been requested?&lt;/td&gt;&lt;td&gt; ${UserNew} &lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;Your typical Salesforce.com account level?&lt;/td&gt;&lt;td&gt; ${UserLevel} (${costPerUser} per user/per mo)&lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;% of Dedicated Users:&lt;/td&gt;&lt;td&gt; ${displayPercentDedicatedUser} %&lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;% of Occasional Users:&lt;/td&gt;&lt;td&gt; ${displayPercentOccasionalUser} %&lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;% of Infrequent Users:&lt;/td&gt;&lt;td&gt; ${displayPercentInfrequentUser} %&lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;% of 3rd Party Users:&lt;/td&gt;&lt;td&gt; ${displayPercent3rdPartyUser} %&lt;/td&gt;&lt;/tr&gt;		
+	&lt;tr align='right'&gt;&lt;td&gt;How many Salesforce.com Accounts do you currently pay for?&lt;/td&gt;&lt;td&gt; ${UserMap.get("AVG").get("UserCurrent")} &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;How many new Salesforce.com Accounts have been requested?&lt;/td&gt;&lt;td&gt; ${UserMap.get("AVG").get("UserNew")} &lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Your typical Salesforce.com account level?&lt;/td&gt;&lt;td&gt; ${UserMap.get("AVG").get("UserLevel")} (${UserMap.get("AVG").get("costPerUser")} per user/per mo)&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of Dedicated Users:&lt;/td&gt;&lt;td&gt; ${UserMap.get("AVG").get("displayPercentDedicatedUser")} %&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of Occasional Users:&lt;/td&gt;&lt;td&gt; ${UserMap.get("AVG").get("displayPercentOccasionalUser")} %&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of Infrequent Users:&lt;/td&gt;&lt;td&gt; ${UserMap.get("AVG").get("displayPercentInfrequentUser")} %&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;% of 3rd Party Users:&lt;/td&gt;&lt;td&gt; ${UserMap.get("AVG").get("displayPercent3rdPartyUser")} %&lt;/td&gt;&lt;/tr&gt;		
 &lt;/table&gt;display
 &lt;/br&gt;
 &lt;strong&gt;Detailed estimates:&lt;/strong&gt;
 &lt;table&gt;
 	&lt;tr align='center'&gt;&lt;td&gt;&amp;nbsp;&lt;/td&gt;&lt;td&gt;from&lt;/td&gt;&lt;td&gt; to &lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;Your estimated Yearly SAVINGS is between:&lt;/td&gt;&lt;td style="border: 1px solid black;"&gt; ${showYearlySavings}&lt;/td&gt;&lt;/tr&gt;
-	&lt;tr align='right'&gt;&lt;td&gt;Saving % from your current cost:&lt;/td&gt;&lt;td style="border: 1px solid black;"&gt; ${showSavingsPercentage}&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Your estimated Yearly SAVINGS is between:&lt;/td&gt;&lt;td style="border: 1px solid black;"&gt;${UserMap.get("AVG").get("showYearlySavings")}&lt;/td&gt;&lt;/tr&gt;
+	&lt;tr align='right'&gt;&lt;td&gt;Saving % from your current cost:&lt;/td&gt;&lt;td style="border: 1px solid black;"&gt;${UserMap.get("AVG").get("showSavingsPercentage")}&lt;/td&gt;&lt;/tr&gt;
 &lt;/table&gt;
 &lt;/br&gt;
 &lt;div&gt;Your reference ID on this assessment is: ${execution.getProcessInstanceId()}.&lt;/div&gt;
@@ -371,22 +326,215 @@ Philadelphia, PA 19104&lt;/br&gt;</activiti:expression>
       </sequenceFlow>
       <sequenceFlow id="flow77" sourceRef="scripttask1" targetRef="mailtask1"></sequenceFlow>
       <sequenceFlow id="flow78" sourceRef="mailtask1" targetRef="BasicUserInfo"></sequenceFlow>
+      <scriptTask id="scripttask2" name="get user input" scriptFormat="javascript" activiti:autoStoreVariables="true">
+        <script>//*********************************************************************
+//*******         get user input                                   ****
+//*********************************************************************
+
+UserMap.put(assignee, Packages.java.util.HashMap());
+
+//*********** get user input: (UserCurrent, UserNew, UserLevel)
+UserMap.get(assignee).put("UserCurrent", UserCurrent);
+UserMap.get(assignee).put("UserNew", UserNew);
+UserMap.get(assignee).put("UserLevel", UserLevel);
+
+//****** calculate costPerUser
+UserMap.get(assignee).put("costPerUser", 1 * userLevelCostMap.get(UserMap.get(assignee).get("UserLevel")));
+UserMap.get(assignee).put("projectedUser", UserMap.get(assignee).get("UserCurrent")*1+UserMap.get(assignee).get("UserNew")*1);
+UserMap.get(assignee).put("currentMonthlySpend", UserMap.get(assignee).get("UserCurrent")*UserMap.get(assignee).get("costPerUser"));
+UserMap.get(assignee).put("projectedMonthlySpend", UserMap.get(assignee).get("projectedUser")*UserMap.get(assignee).get("costPerUser"));
+
+UserMap.get(assignee).put("PercentTotal", 0.00);</script>
+      </scriptTask>
+      <sequenceFlow id="flow79" sourceRef="scripttask2" targetRef="InputUserSeg"></sequenceFlow>
+      <exclusiveGateway id="exclusivegateway7" name="Exclusive Gateway"></exclusiveGateway>
+      <sequenceFlow id="flow81" sourceRef="Results" targetRef="exclusivegateway7"></sequenceFlow>
+      <sequenceFlow id="flow82" sourceRef="exclusivegateway7" targetRef="endevent2">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'learnHow'}]]></conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="flow83" sourceRef="exclusivegateway7" targetRef="BasicUserInfo">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'return'}]]></conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="flow84" sourceRef="exclusivegateway7" targetRef="inviteMore">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'inviteOthers'}]]></conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="flow85" sourceRef="exclusivegateway7" targetRef="inputEmail">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'emailResults'}]]></conditionExpression>
+      </sequenceFlow>
+      <scriptTask id="scripttask3" name="Calculate AVG" scriptFormat="javascript" activiti:autoStoreVariables="false">
+        <script>//*********************************************************************
+//*******         Calculate AVG                                    ****
+//*********************************************************************
+
+UserMap.get("AVG").put("ParticipantCount", (UserMap.get("AVG").get("ParticipantCount")*1+1));
+
+//*********** AVG user input: (UserCurrent, UserNew, UserLevel)
+
+UserMap.get("AVG").put("UserCurrentTotal", (UserMap.get("AVG").get("UserCurrentTotal")*1 + UserMap.get(assignee).get("UserCurrent")*1));
+UserMap.get("AVG").put("UserNewTotal",     (UserMap.get("AVG").get("UserNewTotal")*1     + UserMap.get(assignee).get("UserNew")*1));
+UserMap.get("AVG").put("costPerUserTotal", (UserMap.get("AVG").get("costPerUserTotal")*1 + UserMap.get(assignee).get("costPerUser")*1));
+UserMap.get("AVG").put("UserLevel", UserMap.get(assignee).get("UserLevel"));
+
+if(UserMap.get("AVG").get("ParticipantCount")!=0){
+   UserMap.get("AVG").put("UserCurrent", ((UserMap.get("AVG").get("UserCurrentTotal")*1)/ (UserMap.get("AVG").get("ParticipantCount"))));
+   UserMap.get("AVG").put("UserNew",     ((UserMap.get("AVG").get("UserNewTotal")*1)    / (UserMap.get("AVG").get("ParticipantCount"))));
+   UserMap.get("AVG").put("costPerUser", ((UserMap.get("AVG").get("costPerUserTotal")*1)/ (UserMap.get("AVG").get("ParticipantCount"))));
+}
+
+//************ * calculate costPerUser
+UserMap.get("AVG").put("projectedUser",         UserMap.get("AVG").get("UserCurrent")*1+UserMap.get("AVG").get("UserNew")*1);
+UserMap.get("AVG").put("currentMonthlySpend",   UserMap.get("AVG").get("UserCurrent") * UserMap.get("AVG").get("costPerUser"));
+UserMap.get("AVG").put("projectedMonthlySpend", UserMap.get("AVG").get("projectedUser")*UserMap.get("AVG").get("costPerUser"));
+
+
+//*********************************************************************
+//*********** AVG segment input: (PercentDedicatedUser, PercentOccasionalUser, PercentInfrequentUser, Percent3rdPartyUser)
+
+UserMap.get("AVG").put("PercentDedicatedUserTotal",  (UserMap.get("AVG").get("PercentDedicatedUserTotal")*1 +  UserMap.get(assignee).get("PercentDedicatedUser")*1));
+UserMap.get("AVG").put("PercentOccasionalUserTotal", (UserMap.get("AVG").get("PercentOccasionalUserTotal")*1 + UserMap.get(assignee).get("PercentOccasionalUser")*1));
+UserMap.get("AVG").put("PercentInfrequentUserTotal", (UserMap.get("AVG").get("PercentInfrequentUserTotal")*1 + UserMap.get(assignee).get("PercentInfrequentUser")*1));
+UserMap.get("AVG").put("Percent3rdPartyUserTotal",   (UserMap.get("AVG").get("Percent3rdPartyUserTotal")*1   + UserMap.get(assignee).get("Percent3rdPartyUser")*1));
+
+UserMap.get("AVG").put("PercentTotal", UserMap.get("AVG").get("PercentDedicatedUserTotal")*1+UserMap.get("AVG").get("PercentOccasionalUser")*1+UserMap.get("AVG").get("PercentInfrequentUser")*1+UserMap.get("AVG").get("Percent3rdPartyUser")*1);
+
+
+ // ****** set crrent user seg
+
+UserMap.get("AVG").put("currentUser_dedicated", UserMap.get("AVG").get("UserCurrent")*UserMap.get("AVG").get("PercentDedicatedUser"));
+UserMap.get("AVG").put("currentUser_occasional", UserMap.get("AVG").get("UserCurrent")*UserMap.get("AVG").get("PercentOccasionalUser"));
+UserMap.get("AVG").put("currentUser_infrequent", UserMap.get("AVG").get("UserCurrent")*UserMap.get("AVG").get("PercentInfrequentUser"));
+UserMap.get("AVG").put("currentUser_thirdParty", UserMap.get("AVG").get("UserCurrent")*UserMap.get("AVG").get("Percent3rdPartyUser"));
+
+ // ****** set projected user seg
+UserMap.get("AVG").put("projectedUser_dedicated",  UserMap.get("AVG").get("projectedUser")*UserMap.get("AVG").get("PercentDedicatedUser"));
+UserMap.get("AVG").put("projectedUser_occasional", UserMap.get("AVG").get("projectedUser")*UserMap.get("AVG").get("PercentOccasionalUser"));
+UserMap.get("AVG").put("projectedUser_infrequent", UserMap.get("AVG").get("projectedUser")*UserMap.get("AVG").get("PercentInfrequentUser"));
+UserMap.get("AVG").put("projectedUser_thirdParty", UserMap.get("AVG").get("projectedUser")*UserMap.get("AVG").get("Percent3rdPartyUser"));
+
+
+ // ****** set min current user seg  new
+UserMap.get("AVG").put("minUserCurrentPIO_dedicated",  UserMap.get("AVG").get("currentUser_dedicated")*minSaveAssumptionMap.get("dedicated"));
+UserMap.get("AVG").put("minUserCurrentPIO_occasional", UserMap.get("AVG").get("currentUser_occasional")*minSaveAssumptionMap.get("occasional"));
+UserMap.get("AVG").put("minUserCurrentPIO_infrequent", UserMap.get("AVG").get("currentUser_infrequent")*minSaveAssumptionMap.get("infrequent"));
+UserMap.get("AVG").put("minUserCurrentPIO_thirdParty", UserMap.get("AVG").get("currentUser_thirdParty")*minSaveAssumptionMap.get("thirdParty"));
+
+UserMap.get("AVG").put("lowEndWithPIOCurrentUser", (UserMap.get("AVG").get("minUserCurrentPIO_dedicated")*1+UserMap.get("AVG").get("minUserCurrentPIO_occasional")*1+UserMap.get("AVG").get("minUserCurrentPIO_infrequent")*1+UserMap.get("AVG").get("minUserCurrentPIO_thirdParty")*1));
+UserMap.get("AVG").put("lowEndWithPIOCurrentCost", UserMap.get("AVG").get("lowEndWithPIOCurrentUser")*UserMap.get("AVG").get("costPerUser"));
+
+
+ // ****** set min projected user seg new
+
+UserMap.get("AVG").put("minUserProjectedPIO_dedicated",  UserMap.get("AVG").get("projectedUser_dedicated")*minSaveAssumptionMap.get("dedicated"));
+UserMap.get("AVG").put("minUserProjectedPIO_occasional", UserMap.get("AVG").get("projectedUser_occasional")*minSaveAssumptionMap.get("occasional"));
+UserMap.get("AVG").put("minUserProjectedPIO_infrequent", UserMap.get("AVG").get("projectedUser_infrequent")*minSaveAssumptionMap.get("infrequent"));
+UserMap.get("AVG").put("minUserProjectedPIO_thirdParty", UserMap.get("AVG").get("projectedUser_thirdParty")*minSaveAssumptionMap.get("thirdParty"));
+
+UserMap.get("AVG").put("lowEndWithPIOProjectedUser", (UserMap.get("AVG").get("minUserProjectedPIO_dedicated")*1+UserMap.get("AVG").get("minUserProjectedPIO_occasional")*1+UserMap.get("AVG").get("minUserProjectedPIO_infrequent")*1+UserMap.get("AVG").get("minUserProjectedPIO_thirdParty")*1));
+UserMap.get("AVG").put("lowEndWithPIOProjectedCost", UserMap.get("AVG").get("lowEndWithPIOProjectedUser")*UserMap.get("AVG").get("costPerUser"));
+
+
+ // ****** set max projected user seg new
+
+UserMap.get("AVG").put("maxUserProjectedPIO_dedicated",  UserMap.get("AVG").get("projectedUser_dedicated")*maxSaveAssumptionMap.get("dedicated"));
+UserMap.get("AVG").put("maxUserProjectedPIO_occasional", UserMap.get("AVG").get("projectedUser_occasional")*maxSaveAssumptionMap.get("occasional"));
+UserMap.get("AVG").put("maxUserProjectedPIO_infrequent", UserMap.get("AVG").get("projectedUser_infrequent")*maxSaveAssumptionMap.get("infrequent"));
+UserMap.get("AVG").put("maxUserProjectedPIO_thirdParty", UserMap.get("AVG").get("projectedUser_thirdParty")*maxSaveAssumptionMap.get("thirdParty"));
+
+UserMap.get("AVG").put("highEndWithPIOProjectedUser", (UserMap.get("AVG").get("maxUserProjectedPIO_dedicated")*1+UserMap.get("AVG").get("maxUserProjectedPIO_occasional")*1+UserMap.get("AVG").get("maxUserProjectedPIO_infrequent")*1+UserMap.get("AVG").get("maxUserProjectedPIO_thirdParty")*1));
+UserMap.get("AVG").put("highEndWithPIOProjectedCost", UserMap.get("AVG").get("highEndWithPIOProjectedUser")*UserMap.get("AVG").get("costPerUser"));
+
+ // ***** for calc 
+ CostPercentagePIO = 0.5;
+
+UserMap.get("AVG").put("lowPotentialMonthlySavings",  (UserMap.get("AVG").get("currentMonthlySpend")*1-UserMap.get("AVG").get("lowEndWithPIOCurrentCost")*1));
+UserMap.get("AVG").put("highPotentialMonthlySavings",  (UserMap.get("AVG").get("lowEndWithPIOProjectedCost")*1-UserMap.get("AVG").get("highEndWithPIOProjectedCost")*1));
+UserMap.get("AVG").put("lowPIOCost",  (UserMap.get("AVG").get("lowPotentialMonthlySavings")*1-CostPercentagePIO*1));
+UserMap.get("AVG").put("highPIOCost", (UserMap.get("AVG").get("highPotentialMonthlySavings")*1-CostPercentagePIO*1));
+
+UserMap.get("AVG").put("lowProjectedYearlySaving",  (UserMap.get("AVG").get("lowPotentialMonthlySavings")*(1-CostPercentagePIO*1)*12));
+UserMap.get("AVG").put("highProjectedYearlySaving", (UserMap.get("AVG").get("highPotentialMonthlySavings")*(1-CostPercentagePIO*1)*12));
+
+UserMap.get("AVG").put("lowPotentialSavingPercent",  (UserMap.get("AVG").get("lowPotentialMonthlySavings")/UserMap.get("AVG").get("currentMonthlySpend")*100));
+UserMap.get("AVG").put("highPotentialSavingPercent", (UserMap.get("AVG").get("highPotentialMonthlySavings")/UserMap.get("AVG").get("projectedMonthlySpend")*100));
+
+UserMap.get("AVG").put("showYearlySavings",     ("$"+(UserMap.get("AVG").get("lowProjectedYearlySaving")*1.00).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")+" ~ $"+(UserMap.get("AVG").get("highProjectedYearlySaving")*1.00).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")));
+UserMap.get("AVG").put("showSavingsPercentage", (" " + (UserMap.get("AVG").get("lowPotentialSavingPercent")*1.00).toFixed(2) + "% ~ "+(UserMap.get("AVG").get("highPotentialSavingPercent")*1.00).toFixed(2) + "%"));
+
+//***** set for display
+UserMap.get("AVG").put("displayPercentDedicatedUser",  (UserMap.get("AVG").get("PercentDedicatedUser")*100).toFixed(2));
+UserMap.get("AVG").put("displayPercentOccasionalUser", (UserMap.get("AVG").get("PercentOccasionalUser")*100).toFixed(2));
+UserMap.get("AVG").put("displayPercentInfrequentUser", (UserMap.get("AVG").get("PercentInfrequentUser")*100).toFixed(2));
+UserMap.get("AVG").put("displayPercent3rdPartyUser",   (UserMap.get("AVG").get("Percent3rdPartyUser")*100).toFixed(2));
+UserMap.get("AVG").put("displaylowPotentialSavingPercent",   (UserMap.get("AVG").get("lowPotentialSavingPercent")*100).toFixed(2));
+UserMap.get("AVG").put("displayhighPotentialSavingPercent",("$" + (UserMap.get("AVG").get("highPotentialSavingPercent")*100).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")));
+UserMap.get("AVG").put("displayhighProjectedYearlySaving", ("$" + (UserMap.get("AVG").get("highProjectedYearlySaving")*1.00).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")));
+</script>
+      </scriptTask>
+      <sequenceFlow id="flow87" sourceRef="calculateResults" targetRef="Results"></sequenceFlow>
+      <sequenceFlow id="flow88" sourceRef="emailRestuls" targetRef="scripttask3"></sequenceFlow>
     </subProcess>
     <sequenceFlow id="flow40" sourceRef="SFDCCalculator" targetRef="exclusivegateway5"></sequenceFlow>
     <serviceTask id="addInitialApprover" name="Add Initial Approver" activiti:class="plugins.wf_Add_Parties"></serviceTask>
     <sequenceFlow id="flow54" sourceRef="addInitialApprover" targetRef="SFDCCalculator"></sequenceFlow>
     <scriptTask id="InitialSettings" name="Initial Settings" scriptFormat="javascript" activiti:autoStoreVariables="true">
       <documentation>set point.io email as default email to start process.</documentation>
-      <script>party1_role = 'Approver';
+      <script>//************************************************************
+//*******         Initial Settings                        ****
+//************************************************************
+
+// ****** set approver to originator of process
+party1_role = 'Approver';
 if (null == execution.getVariable("party1_email"))
       {party1_email = wf_currentAssignee;}
 addedInvitee = false;
 myEmail = "";
+
+// ****** set initial value of user segment, can be removed
 PercentDedicatedUser = 0.75;
 PercentOccasionalUser = 0.1;
 PercentInfrequentUser = 0.1;
 Percent3rdPartyUser = 0.05;
-PercentageTotal = 1.0;</script>
+PercentageTotal = 1.0;
+
+
+// ****** set user level to cost mapping     DO NOT REMOVE
+userLevelCostMap=Packages.java.util.HashMap();
+userLevelCostMap.put("ContactManager",   5.00);
+userLevelCostMap.put("Group",            25.00);
+userLevelCostMap.put("Professional",     65.00);
+userLevelCostMap.put("Enterprise",      125.00);
+userLevelCostMap.put("Performance",     300.00);
+userLevelCostMap.put("NotSure",        125.00);
+
+ // ****** set min save Assumption map     DO NOT REMOVE
+minSaveAssumptionMap=Packages.java.util.HashMap();
+minSaveAssumptionMap.put("dedicated",   "1");
+minSaveAssumptionMap.put("occasional",  "0.75");
+minSaveAssumptionMap.put("infrequent",  "0.5");
+minSaveAssumptionMap.put("thirdParty",  "0.25");
+
+ // ****** set max save Assumption map     DO NOT REMOVE
+maxSaveAssumptionMap=Packages.java.util.HashMap();
+maxSaveAssumptionMap.put("dedicated",   "0.75");
+maxSaveAssumptionMap.put("occasional",  "0.5");
+maxSaveAssumptionMap.put("infrequent",  "0.0");
+maxSaveAssumptionMap.put("thirdParty",  "0.0");
+
+//**** initial UserMap and AVG
+UserMap=Packages.java.util.HashMap();
+UserMap.put("AVG", Packages.java.util.HashMap());
+UserMap.get("AVG").put("ParticipantCount", 0);
+
+UserMap.get("AVG").put("ParticipantCount", 0);
+UserMap.get("AVG").put("UserCurrent", 0);
+UserMap.get("AVG").put("UserNew", 0);
+UserMap.get("AVG").put("UserLevel", 0);
+UserMap.get("AVG").put("costPerUser", 0);
+UserMap.get("AVG").put("PercentDedicatedUser", 0);
+UserMap.get("AVG").put("PercentOccasionalUser", 0);
+UserMap.get("AVG").put("PercentInfrequentUser", 0);
+UserMap.get("AVG").put("Percent3rdPartyUser", 0);
+</script>
     </scriptTask>
     <sequenceFlow id="flow55" sourceRef="InitialSettings" targetRef="addInitialApprover"></sequenceFlow>
     <startEvent id="startevent1" name="Start"></startEvent>
@@ -400,76 +548,82 @@ PercentageTotal = 1.0;</script>
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${addedInvitee}]]></conditionExpression>
     </sequenceFlow>
   </process>
-  <bpmndi:BPMNDiagram id="BPMNDiagram_SFDCFlow">
-    <bpmndi:BPMNPlane bpmnElement="SFDCFlow" id="BPMNPlane_SFDCFlow">
+  <bpmndi:BPMNDiagram id="BPMNDiagram_SFDCFlow9">
+    <bpmndi:BPMNPlane bpmnElement="SFDCFlow9" id="BPMNPlane_SFDCFlow9">
       <bpmndi:BPMNShape bpmnElement="SFDCCalculator" id="BPMNShape_SFDCCalculator">
-        <omgdc:Bounds height="392.0" width="1020.0" x="87.0" y="154.0"></omgdc:Bounds>
+        <omgdc:Bounds height="426.0" width="1024.0" x="87.0" y="165.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="BasicUserInfo" id="BPMNShape_BasicUserInfo">
-        <omgdc:Bounds height="55.0" width="105.0" x="222.0" y="186.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="222.0" y="197.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="addInvitesScript" id="BPMNShape_addInvitesScript">
-        <omgdc:Bounds height="55.0" width="105.0" x="930.0" y="442.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="930.0" y="453.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="calculateResults" id="BPMNShape_calculateResults">
-        <omgdc:Bounds height="55.0" width="105.0" x="635.0" y="186.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="635.0" y="197.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="Results" id="BPMNShape_Results">
-        <omgdc:Bounds height="55.0" width="105.0" x="765.0" y="186.0"></omgdc:Bounds>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="exclusivegateway1" id="BPMNShape_exclusivegateway1">
-        <omgdc:Bounds height="40.0" width="40.0" x="797.0" y="272.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="837.0" y="197.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="emailRestuls" id="BPMNShape_emailRestuls">
-        <omgdc:Bounds height="55.0" width="105.0" x="522.0" y="442.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="360.0" y="460.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="inviteMore" id="BPMNShape_inviteMore">
-        <omgdc:Bounds height="55.0" width="105.0" x="765.0" y="352.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="765.0" y="363.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="exclusivegateway2" id="BPMNShape_exclusivegateway2">
-        <omgdc:Bounds height="40.0" width="40.0" x="895.0" y="359.0"></omgdc:Bounds>
+        <omgdc:Bounds height="40.0" width="40.0" x="895.0" y="370.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="InputUserSeg" id="BPMNShape_InputUserSeg">
-        <omgdc:Bounds height="55.0" width="105.0" x="380.0" y="186.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="460.0" y="197.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="exclusivegateway3" id="BPMNShape_exclusivegateway3">
-        <omgdc:Bounds height="40.0" width="40.0" x="797.0" y="449.0"></omgdc:Bounds>
+        <omgdc:Bounds height="40.0" width="40.0" x="797.0" y="460.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="exclusivegateway4" id="BPMNShape_exclusivegateway4">
-        <omgdc:Bounds height="40.0" width="40.0" x="530.0" y="193.0"></omgdc:Bounds>
+        <omgdc:Bounds height="40.0" width="40.0" x="580.0" y="207.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="startevent2" id="BPMNShape_startevent2">
-        <omgdc:Bounds height="35.0" width="35.0" x="100.0" y="196.0"></omgdc:Bounds>
+        <omgdc:Bounds height="35.0" width="35.0" x="100.0" y="207.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="endevent2" id="BPMNShape_endevent2">
-        <omgdc:Bounds height="35.0" width="35.0" x="1000.0" y="275.0"></omgdc:Bounds>
+        <omgdc:Bounds height="35.0" width="35.0" x="638.0" y="470.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="inputEmail" id="BPMNShape_inputEmail">
-        <omgdc:Bounds height="55.0" width="105.0" x="522.0" y="359.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="360.0" y="355.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="inclusivegateway1" id="BPMNShape_inclusivegateway1">
-        <omgdc:Bounds height="40.0" width="40.0" x="1164.0" y="334.0"></omgdc:Bounds>
+        <omgdc:Bounds height="40.0" width="40.0" x="1164.0" y="345.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="setInviteeRole" id="BPMNShape_setInviteeRole">
-        <omgdc:Bounds height="55.0" width="105.0" x="972.0" y="352.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="972.0" y="363.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="exclusivegateway6" id="BPMNShape_exclusivegateway6">
-        <omgdc:Bounds height="40.0" width="40.0" x="150.0" y="193.0"></omgdc:Bounds>
+        <omgdc:Bounds height="40.0" width="40.0" x="150.0" y="204.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="scripttask1" id="BPMNShape_scripttask1">
-        <omgdc:Bounds height="55.0" width="105.0" x="118.0" y="280.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="118.0" y="291.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="mailtask1" id="BPMNShape_mailtask1">
-        <omgdc:Bounds height="55.0" width="105.0" x="118.0" y="413.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="118.0" y="424.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask2" id="BPMNShape_scripttask2">
+        <omgdc:Bounds height="55.0" width="105.0" x="340.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway7" id="BPMNShape_exclusivegateway7">
+        <omgdc:Bounds height="40.0" width="40.0" x="635.0" y="305.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask3" id="BPMNShape_scripttask3">
+        <omgdc:Bounds height="55.0" width="105.0" x="510.0" y="460.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="addInitialApprover" id="BPMNShape_addInitialApprover">
-        <omgdc:Bounds height="55.0" width="105.0" x="509.0" y="36.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="544.0" y="36.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="InitialSettings" id="BPMNShape_InitialSettings">
         <omgdc:Bounds height="55.0" width="105.0" x="296.0" y="36.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
-        <omgdc:Bounds height="35.0" width="35.0" x="131.0" y="46.0"></omgdc:Bounds>
+        <omgdc:Bounds height="35.0" width="35.0" x="113.0" y="46.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
         <omgdc:Bounds height="35.0" width="35.0" x="1149.0" y="212.0"></omgdc:Bounds>
@@ -478,128 +632,135 @@ PercentageTotal = 1.0;</script>
         <omgdc:Bounds height="40.0" width="40.0" x="1146.0" y="343.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge bpmnElement="flow29" id="BPMNEdge_flow29">
-        <omgdi:waypoint x="327.0" y="213.0"></omgdi:waypoint>
-        <omgdi:waypoint x="380.0" y="213.0"></omgdi:waypoint>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="flow32" id="BPMNEdge_flow32">
-        <omgdi:waypoint x="740.0" y="213.0"></omgdi:waypoint>
-        <omgdi:waypoint x="765.0" y="213.0"></omgdi:waypoint>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="flow33" id="BPMNEdge_flow33">
-        <omgdi:waypoint x="817.0" y="241.0"></omgdi:waypoint>
-        <omgdi:waypoint x="817.0" y="272.0"></omgdi:waypoint>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="flow34" id="BPMNEdge_flow34">
-        <omgdi:waypoint x="817.0" y="312.0"></omgdi:waypoint>
-        <omgdi:waypoint x="817.0" y="352.0"></omgdi:waypoint>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="flow35" id="BPMNEdge_flow35">
-        <omgdi:waypoint x="797.0" y="292.0"></omgdi:waypoint>
-        <omgdi:waypoint x="284.0" y="290.0"></omgdi:waypoint>
-        <omgdi:waypoint x="274.0" y="241.0"></omgdi:waypoint>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="flow43" id="BPMNEdge_flow43">
-        <omgdi:waypoint x="817.0" y="312.0"></omgdi:waypoint>
-        <omgdi:waypoint x="574.0" y="359.0"></omgdi:waypoint>
+        <omgdi:waypoint x="327.0" y="224.0"></omgdi:waypoint>
+        <omgdi:waypoint x="340.0" y="227.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow44" id="BPMNEdge_flow44">
-        <omgdi:waypoint x="870.0" y="379.0"></omgdi:waypoint>
-        <omgdi:waypoint x="895.0" y="379.0"></omgdi:waypoint>
+        <omgdi:waypoint x="870.0" y="390.0"></omgdi:waypoint>
+        <omgdi:waypoint x="895.0" y="390.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow46" id="BPMNEdge_flow46">
-        <omgdi:waypoint x="935.0" y="379.0"></omgdi:waypoint>
-        <omgdi:waypoint x="972.0" y="379.0"></omgdi:waypoint>
+        <omgdi:waypoint x="935.0" y="390.0"></omgdi:waypoint>
+        <omgdi:waypoint x="972.0" y="390.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow47" id="BPMNEdge_flow47">
-        <omgdi:waypoint x="930.0" y="469.0"></omgdi:waypoint>
-        <omgdi:waypoint x="837.0" y="469.0"></omgdi:waypoint>
+        <omgdi:waypoint x="930.0" y="480.0"></omgdi:waypoint>
+        <omgdi:waypoint x="837.0" y="480.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow56" id="BPMNEdge_flow56">
-        <omgdi:waypoint x="485.0" y="213.0"></omgdi:waypoint>
-        <omgdi:waypoint x="530.0" y="213.0"></omgdi:waypoint>
+        <omgdi:waypoint x="565.0" y="224.0"></omgdi:waypoint>
+        <omgdi:waypoint x="580.0" y="227.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow57" id="BPMNEdge_flow57">
-        <omgdi:waypoint x="915.0" y="359.0"></omgdi:waypoint>
-        <omgdi:waypoint x="914.0" y="214.0"></omgdi:waypoint>
-        <omgdi:waypoint x="870.0" y="213.0"></omgdi:waypoint>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="flow59" id="BPMNEdge_flow59">
-        <omgdi:waypoint x="837.0" y="292.0"></omgdi:waypoint>
-        <omgdi:waypoint x="1000.0" y="292.0"></omgdi:waypoint>
+        <omgdi:waypoint x="915.0" y="370.0"></omgdi:waypoint>
+        <omgdi:waypoint x="889.0" y="252.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow60" id="BPMNEdge_flow60">
-        <omgdi:waypoint x="817.0" y="449.0"></omgdi:waypoint>
-        <omgdi:waypoint x="817.0" y="407.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="460.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="418.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow61" id="BPMNEdge_flow61">
-        <omgdi:waypoint x="817.0" y="449.0"></omgdi:waypoint>
-        <omgdi:waypoint x="574.0" y="414.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="460.0"></omgdi:waypoint>
+        <omgdi:waypoint x="412.0" y="410.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow62" id="BPMNEdge_flow62">
-        <omgdi:waypoint x="550.0" y="233.0"></omgdi:waypoint>
-        <omgdi:waypoint x="552.0" y="274.0"></omgdi:waypoint>
-        <omgdi:waypoint x="436.0" y="274.0"></omgdi:waypoint>
-        <omgdi:waypoint x="432.0" y="241.0"></omgdi:waypoint>
+        <omgdi:waypoint x="600.0" y="247.0"></omgdi:waypoint>
+        <omgdi:waypoint x="597.0" y="283.0"></omgdi:waypoint>
+        <omgdi:waypoint x="509.0" y="284.0"></omgdi:waypoint>
+        <omgdi:waypoint x="512.0" y="252.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow63" id="BPMNEdge_flow63">
-        <omgdi:waypoint x="570.0" y="213.0"></omgdi:waypoint>
-        <omgdi:waypoint x="635.0" y="213.0"></omgdi:waypoint>
+        <omgdi:waypoint x="620.0" y="227.0"></omgdi:waypoint>
+        <omgdi:waypoint x="635.0" y="224.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow66" id="BPMNEdge_flow66">
-        <omgdi:waypoint x="135.0" y="213.0"></omgdi:waypoint>
-        <omgdi:waypoint x="150.0" y="213.0"></omgdi:waypoint>
+        <omgdi:waypoint x="135.0" y="224.0"></omgdi:waypoint>
+        <omgdi:waypoint x="150.0" y="224.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow68" id="BPMNEdge_flow68">
-        <omgdi:waypoint x="574.0" y="442.0"></omgdi:waypoint>
-        <omgdi:waypoint x="817.0" y="241.0"></omgdi:waypoint>
+        <omgdi:waypoint x="615.0" y="487.0"></omgdi:waypoint>
+        <omgdi:waypoint x="638.0" y="487.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow71" id="BPMNEdge_flow71">
-        <omgdi:waypoint x="574.0" y="414.0"></omgdi:waypoint>
-        <omgdi:waypoint x="574.0" y="442.0"></omgdi:waypoint>
+        <omgdi:waypoint x="412.0" y="410.0"></omgdi:waypoint>
+        <omgdi:waypoint x="412.0" y="460.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow72" id="BPMNEdge_flow72">
-        <omgdi:waypoint x="1024.0" y="407.0"></omgdi:waypoint>
-        <omgdi:waypoint x="982.0" y="442.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1024.0" y="418.0"></omgdi:waypoint>
+        <omgdi:waypoint x="982.0" y="453.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow73" id="BPMNEdge_flow73">
-        <omgdi:waypoint x="817.0" y="489.0"></omgdi:waypoint>
-        <omgdi:waypoint x="816.0" y="518.0"></omgdi:waypoint>
-        <omgdi:waypoint x="1081.0" y="517.0"></omgdi:waypoint>
-        <omgdi:waypoint x="1080.0" y="369.0"></omgdi:waypoint>
-        <omgdi:waypoint x="1080.0" y="212.0"></omgdi:waypoint>
-        <omgdi:waypoint x="870.0" y="213.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="500.0"></omgdi:waypoint>
+        <omgdi:waypoint x="816.0" y="529.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1081.0" y="528.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1080.0" y="380.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1080.0" y="223.0"></omgdi:waypoint>
+        <omgdi:waypoint x="942.0" y="224.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow74" id="BPMNEdge_flow74">
-        <omgdi:waypoint x="190.0" y="213.0"></omgdi:waypoint>
-        <omgdi:waypoint x="222.0" y="213.0"></omgdi:waypoint>
+        <omgdi:waypoint x="190.0" y="224.0"></omgdi:waypoint>
+        <omgdi:waypoint x="222.0" y="224.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow75" id="BPMNEdge_flow75">
-        <omgdi:waypoint x="170.0" y="233.0"></omgdi:waypoint>
-        <omgdi:waypoint x="170.0" y="280.0"></omgdi:waypoint>
+        <omgdi:waypoint x="170.0" y="244.0"></omgdi:waypoint>
+        <omgdi:waypoint x="170.0" y="291.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow77" id="BPMNEdge_flow77">
-        <omgdi:waypoint x="170.0" y="335.0"></omgdi:waypoint>
-        <omgdi:waypoint x="170.0" y="413.0"></omgdi:waypoint>
+        <omgdi:waypoint x="170.0" y="346.0"></omgdi:waypoint>
+        <omgdi:waypoint x="170.0" y="424.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow78" id="BPMNEdge_flow78">
-        <omgdi:waypoint x="223.0" y="440.0"></omgdi:waypoint>
-        <omgdi:waypoint x="272.0" y="436.0"></omgdi:waypoint>
-        <omgdi:waypoint x="274.0" y="241.0"></omgdi:waypoint>
+        <omgdi:waypoint x="223.0" y="451.0"></omgdi:waypoint>
+        <omgdi:waypoint x="272.0" y="447.0"></omgdi:waypoint>
+        <omgdi:waypoint x="274.0" y="252.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow79" id="BPMNEdge_flow79">
+        <omgdi:waypoint x="445.0" y="227.0"></omgdi:waypoint>
+        <omgdi:waypoint x="460.0" y="224.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow81" id="BPMNEdge_flow81">
+        <omgdi:waypoint x="889.0" y="252.0"></omgdi:waypoint>
+        <omgdi:waypoint x="655.0" y="305.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow82" id="BPMNEdge_flow82">
+        <omgdi:waypoint x="655.0" y="345.0"></omgdi:waypoint>
+        <omgdi:waypoint x="655.0" y="470.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow83" id="BPMNEdge_flow83">
+        <omgdi:waypoint x="635.0" y="325.0"></omgdi:waypoint>
+        <omgdi:waypoint x="304.0" y="323.0"></omgdi:waypoint>
+        <omgdi:waypoint x="274.0" y="252.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow84" id="BPMNEdge_flow84">
+        <omgdi:waypoint x="655.0" y="345.0"></omgdi:waypoint>
+        <omgdi:waypoint x="817.0" y="363.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow85" id="BPMNEdge_flow85">
+        <omgdi:waypoint x="635.0" y="325.0"></omgdi:waypoint>
+        <omgdi:waypoint x="412.0" y="355.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow87" id="BPMNEdge_flow87">
+        <omgdi:waypoint x="740.0" y="224.0"></omgdi:waypoint>
+        <omgdi:waypoint x="837.0" y="224.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow88" id="BPMNEdge_flow88">
+        <omgdi:waypoint x="465.0" y="487.0"></omgdi:waypoint>
+        <omgdi:waypoint x="510.0" y="487.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow40" id="BPMNEdge_flow40">
-        <omgdi:waypoint x="1107.0" y="350.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1111.0" y="378.0"></omgdi:waypoint>
         <omgdi:waypoint x="1146.0" y="363.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow54" id="BPMNEdge_flow54">
-        <omgdi:waypoint x="561.0" y="91.0"></omgdi:waypoint>
-        <omgdi:waypoint x="597.0" y="154.0"></omgdi:waypoint>
+        <omgdi:waypoint x="596.0" y="91.0"></omgdi:waypoint>
+        <omgdi:waypoint x="599.0" y="165.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow55" id="BPMNEdge_flow55">
         <omgdi:waypoint x="401.0" y="63.0"></omgdi:waypoint>
-        <omgdi:waypoint x="509.0" y="63.0"></omgdi:waypoint>
+        <omgdi:waypoint x="544.0" y="63.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow65" id="BPMNEdge_flow65">
-        <omgdi:waypoint x="166.0" y="63.0"></omgdi:waypoint>
+        <omgdi:waypoint x="148.0" y="63.0"></omgdi:waypoint>
         <omgdi:waypoint x="296.0" y="63.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow64" id="BPMNEdge_flow64">
@@ -608,9 +769,9 @@ PercentageTotal = 1.0;</script>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow42" id="BPMNEdge_flow42">
         <omgdi:waypoint x="1166.0" y="383.0"></omgdi:waypoint>
-        <omgdi:waypoint x="1162.0" y="580.0"></omgdi:waypoint>
-        <omgdi:waypoint x="533.0" y="580.0"></omgdi:waypoint>
-        <omgdi:waypoint x="597.0" y="546.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1164.0" y="621.0"></omgdi:waypoint>
+        <omgdi:waypoint x="600.0" y="620.0"></omgdi:waypoint>
+        <omgdi:waypoint x="599.0" y="591.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
