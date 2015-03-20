@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://activiti.org/bpmn20">
+  <message id="documentSigningMsg" name="documentSigningMsg"></message>
+  <process id="signing" name="signing" isExecutable="true">
+    <documentation>review and approve documents</documentation>
+    <startEvent id="start" name="Start Review" activiti:formKey="wf:submitReviewTask"></startEvent>
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="exclusivegateway3"></sequenceFlow>
+    <userTask id="addParties" name="Add Parties" activiti:assignee="${wf_currentAssignee}">
+      <extensionElements>
+        <activiti:formProperty id="party1_role" name="Party 1 Role" type="enum">
+          <activiti:value id="Approver" name="Approver"></activiti:value>
+          <activiti:value id="Respondee" name="Respondee"></activiti:value>
+        </activiti:formProperty>
+        <activiti:formProperty id="party1_email" name="Party 1 Email" type="string"></activiti:formProperty>
+        <activiti:formProperty id="party2_role" name="Party 2 Role" type="enum">
+          <activiti:value id="Approver" name="Approver"></activiti:value>
+          <activiti:value id="Respondee" name="Respondee"></activiti:value>
+        </activiti:formProperty>
+        <activiti:formProperty id="party2_email" name="Party 2 Email" type="string"></activiti:formProperty>
+        <activiti:formProperty id="party3_role" name="Party 3 Role" type="enum">
+          <activiti:value id="Approver" name="Approver"></activiti:value>
+          <activiti:value id="Respondee" name="Respondee"></activiti:value>
+        </activiti:formProperty>
+        <activiti:formProperty id="party3_email" name="Party 3 Email" type="string"></activiti:formProperty>
+        <activiti:formProperty id="wf_optionsOutcome" name="Option Selection" type="enum" required="true">
+          <activiti:value id="continue" name="Continue"></activiti:value>
+          <activiti:value id="addmore" name="Add More Parties"></activiti:value>
+          <activiti:value id="cancel" name="Cancel"></activiti:value>
+        </activiti:formProperty>
+      </extensionElements>
+    </userTask>
+    <endEvent id="end" name="End Review"></endEvent>
+    <startEvent id="documentSigningTrigger" name="documentSigningTrigger">
+      <messageEventDefinition messageRef="documentSigningMsg"></messageEventDefinition>
+    </startEvent>
+    <serviceTask id="addPartyServiceTask" name="Set Parties Manual" activiti:class="plugins.wf_Add_Parties"></serviceTask>
+    <sequenceFlow id="flow28" sourceRef="addParties" targetRef="addPartyServiceTask"></sequenceFlow>
+    <sequenceFlow id="flow30" sourceRef="addPartyServiceTask" targetRef="addParties">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == "addmore"}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow31" sourceRef="addPartyServiceTask" targetRef="end">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == "cancel"}]]></conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="setOriginator" name="Set Originator" activiti:class="plugins.wf_Loop_Role">
+      <extensionElements>
+        <activiti:field name="roleName">
+          <activiti:string>"Originator"</activiti:string>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="flow32" sourceRef="setOriginator" targetRef="addParties"></sequenceFlow>
+    <exclusiveGateway id="exclusivegateway3" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow34" sourceRef="exclusivegateway3" targetRef="setOriginator">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_currentAssignee == ""}]]></conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="servicetask1" name="Set First Assignee" activiti:expression="#{execution.setVariable(&quot;Originator_LIST&quot;, wf_currentAssignee)} #{execution.setVariable(&quot;Originator_COUNT&quot;, 1)} #{execution.setVariable(&quot;Originator_LOOP&quot;, 0)}"></serviceTask>
+    <sequenceFlow id="flow36" sourceRef="exclusivegateway3" targetRef="servicetask1"></sequenceFlow>
+    <sequenceFlow id="flow37" sourceRef="servicetask1" targetRef="addParties"></sequenceFlow>
+    <subProcess id="ApproveReject" name="Sign Or Reject">
+      <multiInstanceLoopCharacteristics isSequential="false" activiti:collection="Approver_LIST_COL" activiti:elementVariable="assignee"></multiInstanceLoopCharacteristics>
+      <userTask id="review" name="Review Document" activiti:exclusive="false" activiti:assignee="${assignee}">
+        <documentation>Review associated documents and Approve/Reject.</documentation>
+        <extensionElements>
+          <activiti:formProperty id="wf_optionsOutcome" name="Options" type="enum" required="true">
+            <activiti:value id="SIGN" name="Sign"></activiti:value>
+            <activiti:value id="reject" name="Reject"></activiti:value>
+          </activiti:formProperty>
+        </extensionElements>
+      </userTask>
+      <sequenceFlow id="flow27" sourceRef="review" targetRef="reviewDecision"></sequenceFlow>
+      <exclusiveGateway id="reviewDecision" name="Approve or Reject?"></exclusiveGateway>
+      <sequenceFlow id="flowapprove" sourceRef="reviewDecision" targetRef="approveMail"></sequenceFlow>
+      <sequenceFlow id="flowreject" sourceRef="reviewDecision" targetRef="selectReason">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'reject'}]]></conditionExpression>
+      </sequenceFlow>
+      <serviceTask id="approveMail" name="Confirm Signature Mail" activiti:type="mail">
+        <extensionElements>
+          <activiti:field name="to">
+            <activiti:expression>${Originator_LIST}</activiti:expression>
+          </activiti:field>
+          <activiti:field name="from">
+            <activiti:string>alert@point.io</activiti:string>
+          </activiti:field>
+          <activiti:field name="subject">
+            <activiti:expression>Request ${execution.getProcessInstanceId()} is Approved!</activiti:expression>
+          </activiti:field>
+          <activiti:field name="html">
+            <activiti:expression>Your request id ${execution.getProcessInstanceId()} has been reviewed and approved by ${assignee}.</activiti:expression>
+          </activiti:field>
+        </extensionElements>
+      </serviceTask>
+      <userTask id="selectReason" name="Select Failure Reason" activiti:assignee="${assignee}">
+        <documentation>Select reason for Rejection.</documentation>
+        <extensionElements>
+          <activiti:formProperty id="wf_optionsOutcome" name="Rejection Reason" type="enum" required="true">
+            <activiti:value id="outofpolicy" name="Out of Policy"></activiti:value>
+            <activiti:value id="duplicate" name="Duplicate Request"></activiti:value>
+            <activiti:value id="invalid" name="Invalid Request"></activiti:value>
+            <activiti:value id="other" name="Other"></activiti:value>
+          </activiti:formProperty>
+        </extensionElements>
+      </userTask>
+      <sequenceFlow id="flow14" sourceRef="selectReason" targetRef="exclusivegateway1"></sequenceFlow>
+      <userTask id="describeReason" name="Describe Failure Reason" activiti:assignee="${assignee}" activiti:formKey="wf:rejectedTask">
+        <documentation>Provide detail for "Other" reason for reject.</documentation>
+        <extensionElements>
+          <activiti:formProperty id="failureNote" name="Failure Reason" type="string" required="true"></activiti:formProperty>
+        </extensionElements>
+      </userTask>
+      <sequenceFlow id="flow12" sourceRef="describeReason" targetRef="rejectMail"></sequenceFlow>
+      <serviceTask id="rejectMail" name="Rejected Mail" activiti:type="mail">
+        <extensionElements>
+          <activiti:field name="to">
+            <activiti:expression>${Originator_LIST}</activiti:expression>
+          </activiti:field>
+          <activiti:field name="from">
+            <activiti:string>alert@point.io</activiti:string>
+          </activiti:field>
+          <activiti:field name="subject">
+            <activiti:expression>Request ${execution.getProcessInstanceId()} Rejected</activiti:expression>
+          </activiti:field>
+          <activiti:field name="html">
+            <activiti:expression>Your request id ${execution.getProcessInstanceId()} has been reviewed and rejected by ${assignee}.</activiti:expression>
+          </activiti:field>
+        </extensionElements>
+      </serviceTask>
+      <exclusiveGateway id="exclusivegateway1" name="Detail Required?"></exclusiveGateway>
+      <sequenceFlow id="flowother" sourceRef="exclusivegateway1" targetRef="describeReason">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${wf_optionsOutcome == 'other'}]]></conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="flowstd" sourceRef="exclusivegateway1" targetRef="rejectMail"></sequenceFlow>
+      <endEvent id="endevent1" name="End SubFlow Review"></endEvent>
+      <sequenceFlow id="flow39" sourceRef="approveMail" targetRef="endevent1"></sequenceFlow>
+      <sequenceFlow id="flow40" sourceRef="rejectMail" targetRef="endevent1"></sequenceFlow>
+      <startEvent id="startevent1" name="Start SubFlow Review"></startEvent>
+      <sequenceFlow id="flow45" sourceRef="startevent1" targetRef="review"></sequenceFlow>
+    </subProcess>
+    <serviceTask id="mailtask1" name="Notify Final" activiti:type="mail">
+      <extensionElements>
+        <activiti:field name="to">
+          <activiti:expression>${Respondee_LIST}</activiti:expression>
+        </activiti:field>
+        <activiti:field name="from">
+          <activiti:string>alert@point.io</activiti:string>
+        </activiti:field>
+        <activiti:field name="subject">
+          <activiti:expression>You are being notified that the Signing Process ${execution.getProcessInstanceId()} has completed.</activiti:expression>
+        </activiti:field>
+        <activiti:field name="html">
+          <activiti:expression>&lt;p&gt;Siging Process ${execution.getProcessInstanceId()} started by ${Originator_LIST} has completed.&lt;/p&gt;
+&lt;p&gt;
+&lt;table&gt;
+&lt;tr&gt;&lt;td&gt;Approvers:&lt;/td&gt;&lt;td&gt;${Approver_LIST}&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;CC:&lt;/td&gt;&lt;td&gt;${Originator_LIST}&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/p&gt;</activiti:expression>
+        </activiti:field>
+        <activiti:field name="cc">
+          <activiti:expression>${Originator_LIST}</activiti:expression>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="flow26" sourceRef="mailtask1" targetRef="end"></sequenceFlow>
+    <sequenceFlow id="flow38" sourceRef="addPartyServiceTask" targetRef="ApproveReject"></sequenceFlow>
+    <inclusiveGateway id="inclusivegateway1" name="Inclusive Gateway"></inclusiveGateway>
+    <sequenceFlow id="flow41" sourceRef="ApproveReject" targetRef="inclusivegateway1"></sequenceFlow>
+    <sequenceFlow id="flow42" sourceRef="inclusivegateway1" targetRef="mailtask1"></sequenceFlow>
+    <sequenceFlow id="flow44" sourceRef="documentSigningTrigger" targetRef="ApproveReject"></sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_signing">
+    <bpmndi:BPMNPlane bpmnElement="signing" id="BPMNPlane_signing">
+      <bpmndi:BPMNShape bpmnElement="start" id="BPMNShape_start">
+        <omgdc:Bounds height="35.0" width="35.0" x="-9.0" y="108.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="addParties" id="BPMNShape_addParties">
+        <omgdc:Bounds height="55.0" width="105.0" x="290.0" y="98.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="end" id="BPMNShape_end">
+        <omgdc:Bounds height="35.0" width="35.0" x="1130.0" y="184.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="documentSigningTrigger" id="BPMNShape_documentSigningTrigger">
+        <omgdc:Bounds height="35.0" width="35.0" x="0.0" y="373.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="addPartyServiceTask" id="BPMNShape_addPartyServiceTask">
+        <omgdc:Bounds height="55.0" width="105.0" x="445.0" y="98.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="setOriginator" id="BPMNShape_setOriginator">
+        <omgdc:Bounds height="55.0" width="105.0" x="124.0" y="98.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway3" id="BPMNShape_exclusivegateway3">
+        <omgdc:Bounds height="40.0" width="40.0" x="49.0" y="105.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="servicetask1" id="BPMNShape_servicetask1">
+        <omgdc:Bounds height="55.0" width="105.0" x="124.0" y="168.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="ApproveReject" id="BPMNShape_ApproveReject" isExpanded="false">
+        <omgdc:Bounds height="281.0" width="886.0" x="55.0" y="250.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="review" id="BPMNShape_review">
+        <omgdc:Bounds height="55.0" width="105.0" x="150.0" y="330.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="reviewDecision" id="BPMNShape_reviewDecision">
+        <omgdc:Bounds height="40.0" width="40.0" x="280.0" y="337.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="approveMail" id="BPMNShape_approveMail">
+        <omgdc:Bounds height="55.0" width="105.0" x="343.0" y="276.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="selectReason" id="BPMNShape_selectReason">
+        <omgdc:Bounds height="59.0" width="105.0" x="343.0" y="382.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="describeReason" id="BPMNShape_describeReason">
+        <omgdc:Bounds height="55.0" width="105.0" x="530.0" y="384.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="rejectMail" id="BPMNShape_rejectMail">
+        <omgdc:Bounds height="55.0" width="105.0" x="710.0" y="384.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway1" id="BPMNShape_exclusivegateway1">
+        <omgdc:Bounds height="40.0" width="40.0" x="470.0" y="391.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="870.0" y="394.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="80.0" y="340.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="mailtask1" id="BPMNShape_mailtask1">
+        <omgdc:Bounds height="55.0" width="105.0" x="950.0" y="174.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="inclusivegateway1" id="BPMNShape_inclusivegateway1">
+        <omgdc:Bounds height="40.0" width="40.0" x="982.0" y="370.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+        <omgdi:waypoint x="26.0" y="125.0"></omgdi:waypoint>
+        <omgdi:waypoint x="49.0" y="125.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow28" id="BPMNEdge_flow28">
+        <omgdi:waypoint x="395.0" y="125.0"></omgdi:waypoint>
+        <omgdi:waypoint x="445.0" y="125.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow30" id="BPMNEdge_flow30">
+        <omgdi:waypoint x="497.0" y="98.0"></omgdi:waypoint>
+        <omgdi:waypoint x="496.0" y="74.0"></omgdi:waypoint>
+        <omgdi:waypoint x="341.0" y="74.0"></omgdi:waypoint>
+        <omgdi:waypoint x="342.0" y="98.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow31" id="BPMNEdge_flow31">
+        <omgdi:waypoint x="550.0" y="125.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1147.0" y="125.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1147.0" y="184.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow32" id="BPMNEdge_flow32">
+        <omgdi:waypoint x="229.0" y="125.0"></omgdi:waypoint>
+        <omgdi:waypoint x="290.0" y="125.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow34" id="BPMNEdge_flow34">
+        <omgdi:waypoint x="89.0" y="125.0"></omgdi:waypoint>
+        <omgdi:waypoint x="113.0" y="125.0"></omgdi:waypoint>
+        <omgdi:waypoint x="124.0" y="125.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow36" id="BPMNEdge_flow36">
+        <omgdi:waypoint x="69.0" y="145.0"></omgdi:waypoint>
+        <omgdi:waypoint x="69.0" y="195.0"></omgdi:waypoint>
+        <omgdi:waypoint x="124.0" y="195.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow37" id="BPMNEdge_flow37">
+        <omgdi:waypoint x="229.0" y="195.0"></omgdi:waypoint>
+        <omgdi:waypoint x="342.0" y="195.0"></omgdi:waypoint>
+        <omgdi:waypoint x="342.0" y="153.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow27" id="BPMNEdge_flow27">
+        <omgdi:waypoint x="255.0" y="357.0"></omgdi:waypoint>
+        <omgdi:waypoint x="280.0" y="357.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flowapprove" id="BPMNEdge_flowapprove">
+        <omgdi:waypoint x="300.0" y="337.0"></omgdi:waypoint>
+        <omgdi:waypoint x="300.0" y="304.0"></omgdi:waypoint>
+        <omgdi:waypoint x="343.0" y="303.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flowreject" id="BPMNEdge_flowreject">
+        <omgdi:waypoint x="300.0" y="377.0"></omgdi:waypoint>
+        <omgdi:waypoint x="300.0" y="414.0"></omgdi:waypoint>
+        <omgdi:waypoint x="343.0" y="411.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow14" id="BPMNEdge_flow14">
+        <omgdi:waypoint x="448.0" y="411.0"></omgdi:waypoint>
+        <omgdi:waypoint x="470.0" y="411.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow12" id="BPMNEdge_flow12">
+        <omgdi:waypoint x="635.0" y="411.0"></omgdi:waypoint>
+        <omgdi:waypoint x="710.0" y="411.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flowother" id="BPMNEdge_flowother">
+        <omgdi:waypoint x="510.0" y="411.0"></omgdi:waypoint>
+        <omgdi:waypoint x="530.0" y="411.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flowstd" id="BPMNEdge_flowstd">
+        <omgdi:waypoint x="490.0" y="431.0"></omgdi:waypoint>
+        <omgdi:waypoint x="490.0" y="480.0"></omgdi:waypoint>
+        <omgdi:waypoint x="762.0" y="480.0"></omgdi:waypoint>
+        <omgdi:waypoint x="762.0" y="439.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow39" id="BPMNEdge_flow39">
+        <omgdi:waypoint x="448.0" y="303.0"></omgdi:waypoint>
+        <omgdi:waypoint x="887.0" y="303.0"></omgdi:waypoint>
+        <omgdi:waypoint x="887.0" y="394.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow40" id="BPMNEdge_flow40">
+        <omgdi:waypoint x="815.0" y="411.0"></omgdi:waypoint>
+        <omgdi:waypoint x="870.0" y="411.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow45" id="BPMNEdge_flow45">
+        <omgdi:waypoint x="115.0" y="357.0"></omgdi:waypoint>
+        <omgdi:waypoint x="150.0" y="357.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow26" id="BPMNEdge_flow26">
+        <omgdi:waypoint x="1055.0" y="201.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1130.0" y="201.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow38" id="BPMNEdge_flow38">
+        <omgdi:waypoint x="497.0" y="153.0"></omgdi:waypoint>
+        <omgdi:waypoint x="498.0" y="250.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow41" id="BPMNEdge_flow41">
+        <omgdi:waypoint x="941.0" y="390.0"></omgdi:waypoint>
+        <omgdi:waypoint x="982.0" y="390.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow42" id="BPMNEdge_flow42">
+        <omgdi:waypoint x="1002.0" y="370.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1002.0" y="229.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow44" id="BPMNEdge_flow44">
+        <omgdi:waypoint x="35.0" y="390.0"></omgdi:waypoint>
+        <omgdi:waypoint x="55.0" y="390.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

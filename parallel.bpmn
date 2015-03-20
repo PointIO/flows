@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:tns="http://activiti.org/bpmn20" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:yaoqiang="http://bpmn.sourceforge.net" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://activiti.org/bpmn20">
+  <process id="parallelTest" name="parallelTest" isExecutable="true">
+    <startEvent id="start"></startEvent>
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="task1"></sequenceFlow>
+    <userTask id="task1" name="Task One" activiti:assignee="tpanagos@point.io"></userTask>
+    <sequenceFlow id="flow2" sourceRef="task1" targetRef="fork"></sequenceFlow>
+    <parallelGateway id="fork"></parallelGateway>
+    <sequenceFlow id="SequenceFlow_1" sourceRef="fork" targetRef="task2"></sequenceFlow>
+    <sequenceFlow id="SequenceFlow_2" sourceRef="fork" targetRef="task3"></sequenceFlow>
+    <userTask id="task2" name="Task Two" activiti:assignee="tpanagos@point.io"></userTask>
+    <sequenceFlow id="flow3" sourceRef="task2" targetRef="join"></sequenceFlow>
+    <userTask id="task3" name="Task Three" activiti:assignee="meltmetal@gmail.com"></userTask>
+    <sequenceFlow id="flow4" sourceRef="task3" targetRef="join"></sequenceFlow>
+    <parallelGateway id="join"></parallelGateway>
+    <sequenceFlow id="SequenceFlow_3" sourceRef="join" targetRef="task4"></sequenceFlow>
+    <userTask id="task4" name="Task Four" activiti:assignee="tpanagos@point.io"></userTask>
+    <sequenceFlow id="SequenceFlow_4" sourceRef="task4" targetRef="end"></sequenceFlow>
+    <endEvent id="end"></endEvent>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_parallelTest">
+    <bpmndi:BPMNPlane bpmnElement="parallelTest" id="BPMNPlane_parallelTest">
+      <bpmndi:BPMNShape bpmnElement="start" id="BPMNShape_start">
+        <omgdc:Bounds height="36.0" width="36.0" x="10.0" y="162.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="task1" id="BPMNShape_task1">
+        <omgdc:Bounds height="50.0" width="110.0" x="90.0" y="145.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="fork" id="BPMNShape_fork">
+        <omgdc:Bounds height="71.0" width="51.0" x="250.0" y="168.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="task2" id="BPMNShape_task2">
+        <omgdc:Bounds height="81.0" width="151.0" x="340.0" y="20.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="task3" id="BPMNShape_task3">
+        <omgdc:Bounds height="91.0" width="181.0" x="330.0" y="212.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="join" id="BPMNShape_join">
+        <omgdc:Bounds height="50.0" width="50.0" x="530.0" y="125.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="task4" id="BPMNShape_task4">
+        <omgdc:Bounds height="50.0" width="110.0" x="630.0" y="125.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="end" id="BPMNShape_end">
+        <omgdc:Bounds height="36.0" width="36.0" x="810.0" y="133.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+        <omgdi:waypoint x="46.0" y="180.0"></omgdi:waypoint>
+        <omgdi:waypoint x="65.0" y="180.0"></omgdi:waypoint>
+        <omgdi:waypoint x="65.0" y="170.0"></omgdi:waypoint>
+        <omgdi:waypoint x="90.0" y="170.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+        <omgdi:waypoint x="200.0" y="170.0"></omgdi:waypoint>
+        <omgdi:waypoint x="227.0" y="170.0"></omgdi:waypoint>
+        <omgdi:waypoint x="227.0" y="188.0"></omgdi:waypoint>
+        <omgdi:waypoint x="250.0" y="203.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="SequenceFlow_1" id="BPMNEdge_SequenceFlow_1">
+        <omgdi:waypoint x="275.0" y="168.0"></omgdi:waypoint>
+        <omgdi:waypoint x="287.0" y="60.0"></omgdi:waypoint>
+        <omgdi:waypoint x="340.0" y="60.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="SequenceFlow_2" id="BPMNEdge_SequenceFlow_2">
+        <omgdi:waypoint x="275.0" y="239.0"></omgdi:waypoint>
+        <omgdi:waypoint x="287.0" y="257.0"></omgdi:waypoint>
+        <omgdi:waypoint x="330.0" y="257.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
+        <omgdi:waypoint x="491.0" y="60.0"></omgdi:waypoint>
+        <omgdi:waypoint x="555.0" y="60.0"></omgdi:waypoint>
+        <omgdi:waypoint x="555.0" y="125.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4">
+        <omgdi:waypoint x="511.0" y="257.0"></omgdi:waypoint>
+        <omgdi:waypoint x="555.0" y="257.0"></omgdi:waypoint>
+        <omgdi:waypoint x="555.0" y="175.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="SequenceFlow_3" id="BPMNEdge_SequenceFlow_3">
+        <omgdi:waypoint x="580.0" y="150.0"></omgdi:waypoint>
+        <omgdi:waypoint x="603.0" y="150.0"></omgdi:waypoint>
+        <omgdi:waypoint x="603.0" y="150.0"></omgdi:waypoint>
+        <omgdi:waypoint x="630.0" y="150.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="SequenceFlow_4" id="BPMNEdge_SequenceFlow_4">
+        <omgdi:waypoint x="740.0" y="150.0"></omgdi:waypoint>
+        <omgdi:waypoint x="771.0" y="150.0"></omgdi:waypoint>
+        <omgdi:waypoint x="771.0" y="151.0"></omgdi:waypoint>
+        <omgdi:waypoint x="810.0" y="151.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
